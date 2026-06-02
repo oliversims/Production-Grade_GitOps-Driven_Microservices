@@ -1,28 +1,58 @@
 # my-alb-gateway.yaml
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: Gateway
+# -------------------------------------------------------
+# Gateway: Create the actual AWS Application Load Balancer
+# -------------------------------------------------------
+# A Gateway is the real-world instantiation of a GatewayClass.
+# When this resource is applied, the AWS Gateway API Controller
+# reads it and provisions an actual ALB in AWS on your behalf.
+# Think of GatewayClass as the "blueprint" and Gateway as the "building".
+
+apiVersion: gateway.networking.k8s.io/v1beta1  # Kubernetes Gateway API version
+kind: Gateway                                   # Creates the actual load balancer
 metadata:
-  name: app-alb-gateway
-  namespace: default
+  name: app-alb-gateway  # Name referenced by HTTPRoute resources to attach to this gateway
+  namespace: default      # Namespace this Gateway lives in
+
 spec:
+  # Reference the GatewayClass we created in alb-gatewayclass.yaml.
+  # This tells Kubernetes to use the AWS ALB controller to manage this Gateway.
   gatewayClassName: aws-alb-gateway-class
+
+  # -------------------------------------------------------
+  # INFRASTRUCTURE: Link to the LoadBalancerConfiguration
+  # -------------------------------------------------------
+  # Points to the LoadBalancerConfiguration (lbconfig.yaml) we created earlier.
+  # This is how the Gateway picks up the ALB settings like:
+  # - internet-facing scheme
+  # - HTTPS listener with the ACM certificate
   infrastructure:
     parametersRef:
-      kind: LoadBalancerConfiguration
-      name: app-gw-lbconfig
-      group: gateway.k8s.aws
+      kind: LoadBalancerConfiguration  # The custom resource type to reference
+      name: app-gw-lbconfig            # Must match the name in lbconfig.yaml
+      group: gateway.k8s.aws           # The API group that owns this resource type
+
+  # -------------------------------------------------------
+  # LISTENERS: Define the ports and protocols the ALB accepts
+  # -------------------------------------------------------
   listeners:
-  - name: http
-    protocol: HTTP
-    port: 80
-    hostname: "*.oliver14.com"
-    allowedRoutes:
-      namespaces:
-        from: All
-  - name: https
-    protocol: HTTPS
-    hostname: "*.oliver14.com"
-    port: 443
-    allowedRoutes:
-      namespaces:
-        from: All
+    # LISTENER 1: HTTP on port 80
+    # Accepts unencrypted HTTP traffic for any subdomain of oliver14.com.
+    # Typically used to redirect users to HTTPS (handled at the route level).
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.oliver14.com"  # Wildcard — matches any subdomain (e.g., app.oliver14.com, api.oliver14.com)
+      allowedRoutes:
+        namespaces:
+          from: All  # HTTPRoutes from ANY namespace can attach to this listener
+
+    # LISTENER 2: HTTPS on port 443
+    # Accepts encrypted HTTPS traffic for any subdomain of oliver14.com.
+    # SSL termination is handled by the ACM certificate defined in lbconfig.yaml.
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.oliver14.com"  # Same wildcard — matches any subdomain over HTTPS
+      allowedRoutes:
+        namespaces:
+          from: All  # HTTPRoutes from ANY namespace can attach to this listener

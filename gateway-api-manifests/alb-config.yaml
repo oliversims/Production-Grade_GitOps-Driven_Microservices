@@ -1,12 +1,32 @@
 # lbconfig.yaml
-apiVersion: gateway.k8s.aws/v1beta1
-kind: LoadBalancerConfiguration
+# -------------------------------------------------------
+# LoadBalancerConfiguration: Define how the AWS Load Balancer
+# should be set up for this Kubernetes Gateway
+# -------------------------------------------------------
+# This is a custom Kubernetes resource (CRD) introduced by the
+# AWS Gateway API Controller. It tells AWS how to configure
+# the underlying Application Load Balancer (ALB) that gets
+# created when a Gateway resource references this config.
+
+apiVersion: gateway.k8s.aws/v1beta1  # AWS Gateway API Controller API version
+kind: LoadBalancerConfiguration       # Custom resource type for ALB configuration
 metadata:
-  name: app-gw-lbconfig
-  namespace: default
+  name: app-gw-lbconfig   # Name of this config — referenced by a Gateway resource
+  namespace: default       # Kubernetes namespace this resource lives in
+
 spec:
+  # Make the load balancer internet-facing (publicly accessible).
+  # The alternative is "internal" — only reachable within the VPC.
   scheme: internet-facing
+
+  # -------------------------------------------------------
+  # LISTENER CONFIGURATIONS: Define how the ALB listens for traffic
+  # -------------------------------------------------------
   listenerConfigurations:
-    - protocolPort: HTTPS:443
-      defaultCertificate:arn:aws:acm:us-east-1:742934034265:certificate/aed16422-c2f9-41cb-8471-a8aaeab80c97
- 
+    - protocolPort: HTTPS:443   # Listen on port 443 using HTTPS (encrypted traffic)
+
+      # The ARN of the SSL/TLS certificate stored in AWS Certificate Manager (ACM).
+      # This certificate is used to terminate HTTPS at the load balancer,
+      # meaning the ALB decrypts incoming traffic before forwarding it to your pods.
+      # The certificate must match the domain name your users will be visiting.
+      defaultCertificate: "arn:aws:acm:us-east-1:742934034265:certificate/aed16422-c2f9-41cb-8471-a8aaeab80c97"

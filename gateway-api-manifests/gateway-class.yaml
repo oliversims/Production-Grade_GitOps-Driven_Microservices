@@ -1,7 +1,22 @@
 # alb-gatewayclass.yaml
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
+# -------------------------------------------------------
+# GatewayClass: Define the type of Gateway controller to use
+# -------------------------------------------------------
+# A GatewayClass is a cluster-wide resource that acts as a
+# "template" or "driver" for creating Gateways.
+# Think of it like a StorageClass for persistent volumes —
+# it tells Kubernetes WHICH controller should handle
+# any Gateway that references this class.
+# This only needs to be created ONCE per cluster.
+
+apiVersion: gateway.networking.k8s.io/v1beta1  # Kubernetes Gateway API version
+kind: GatewayClass                              # Cluster-wide resource that defines a gateway type
 metadata:
-  name: aws-alb-gateway-class
+  name: aws-alb-gateway-class  # Name used by Gateway resources to reference this class
+
 spec:
+  # The controller responsible for managing Gateways that use this class.
+  # "gateway.k8s.aws/alb" tells Kubernetes to use the AWS Gateway API Controller,
+  # which will provision and manage an AWS Application Load Balancer (ALB)
+  # whenever a Gateway references this GatewayClass.
   controllerName: gateway.k8s.aws/alb

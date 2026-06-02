@@ -15,13 +15,13 @@ spec:
   - name: http
     protocol: HTTP
     port: 80
-    hostname: "*.devopsdock.site"
+    hostname: "*.oliver14.com"
     allowedRoutes:
       namespaces:
         from: All
   - name: https
     protocol: HTTPS
-    hostname: "*.devopsdock.site"
+    hostname: "*.oliver14.com"
     port: 443
     allowedRoutes:
       namespaces:

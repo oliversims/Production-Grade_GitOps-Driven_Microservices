@@ -2634,7 +2634,7 @@ server:
     # -- List of hostnames for the HTTPRoute
     # @default -- `[]` (See [values.yaml])
     hostnames:
-      - argocd.devopsdock.site
+      - argocd.oliver14.com
     # -- HTTPRoute rules configuration
     # @default -- `[]` (See [values.yaml])
     rules:

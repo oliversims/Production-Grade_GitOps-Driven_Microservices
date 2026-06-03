@@ -5,7 +5,7 @@ metadata:
   namespace: monitoring
 spec:
   hostnames:
-    - "grafana.dsvault.in"
+    - "grafana.oliver14.com"
   parentRefs:
   - group: gateway.networking.k8s.io
     namespace: default

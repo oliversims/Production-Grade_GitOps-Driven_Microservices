@@ -1,0 +1,8 @@
+# Clone the repo from GitHub (main branch only, without downloading all files yet)
+git clone --filter=blob:none --sparse -b main git@github.com:oliversims/Production-Grade_GitOps-Driven_Microservices.git
+
+# Go into the repo folder
+cd Production-Grade_GitOps-Driven_Microservices
+
+# Download only the gateway-api-manifests folder (not the whole project)
+git sparse-checkout set gateway-api-manifests

@@ -54,15 +54,10 @@ module "bastion_host" {
   # IAM role attached here — AWS CLI works without aws configure
   iam_instance_profile = aws_iam_instance_profile.bastion.name
 
-  # Runs install-tools.sh on first boot. Saves scripts to /opt/bastion for later.
+  # On first boot: clone scripts from GitHub, then run install-tools.sh
   user_data = templatefile("${path.module}/scripts/user_data.sh.tpl", {
-    install_tools         = chomp(file("${path.module}/scripts/install-tools.sh"))
-    configure_kube        = chomp(file("${path.module}/scripts/configure-kubeconfig.sh"))
-    install_lbc           = chomp(file("${path.module}/scripts/install-lbc.sh"))
-    install_gateway_crds  = chomp(file("${path.module}/scripts/install-gateway-api-crds.sh"))
-    run_setup             = chomp(file("${path.module}/scripts/run-setup.sh"))
-    github_private_key    = tls_private_key.github_key.private_key_openssh
-    github_public_key     = chomp(tls_private_key.github_key.public_key_openssh)
+    github_private_key = tls_private_key.github_key.private_key_openssh
+    github_public_key  = chomp(tls_private_key.github_key.public_key_openssh)
   })
 
   user_data_replace_on_change = true

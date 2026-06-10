@@ -6,18 +6,55 @@ set -e
 # Usage:
 #   /opt/bastion/run-setup.sh
 
-echo "=== Cluster setup started ==="
+echo ""
+echo "========================================"
+echo "  Cluster setup started"
+echo "========================================"
+echo ""
 
 echo "Step 1: Configure kubeconfig (connect kubectl to EKS)"
+echo ""
 sleep 2
 /opt/bastion/configure-kubeconfig.sh
 
+echo ""
+echo "----------------------------------------"
+echo ""
+
 echo "Step 2: Install AWS Load Balancer Controller"
+echo ""
 sleep 2
 /opt/bastion/install-lbc.sh
 
+echo ""
+echo "----------------------------------------"
+echo ""
+
 echo "Step 3: Install Gateway API CRDs"
+echo ""
 sleep 2
 /opt/bastion/install-gateway-api-crds.sh
 
-echo "=== Cluster setup finished ==="
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Step 4: Clone and apply gateway-api-manifests"
+echo ""
+sleep 2
+/opt/bastion/apply-gateway-manifests.sh
+
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Step 5: Install External DNS"
+echo ""
+sleep 2
+/opt/bastion/install-external-dns.sh
+
+echo ""
+echo "========================================"
+echo "  Cluster setup finished"
+echo "========================================"
+echo ""

@@ -26,6 +26,8 @@ chown -R ubuntu:ubuntu /home/ubuntu/.ssh
 sudo -u ubuntu ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts 2>/dev/null
 chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts
 chmod 600 /home/ubuntu/.ssh/known_hosts
+sudo -u ubuntu git config --global user.name "oliversims"
+sudo -u ubuntu git config --global user.email "simsoliver1994@gmail.com"
 
 # Step 3: Clone scripts from GitHub and copy to /opt/bastion
 mkdir -p /opt/bastion
@@ -36,7 +38,7 @@ sudo -u ubuntu git sparse-checkout set terraform/02_bastion/scripts
 cp terraform/02_bastion/scripts/*.sh /opt/bastion/
 chmod +x /opt/bastion/*.sh
 
-# Step 4: Install AWS CLI, kubectl, Helm, eksctl, and Git settings
+# Step 4: Install AWS CLI, kubectl, Helm, and eksctl
 echo "=== Installing tools ==="
 /opt/bastion/install-tools.sh
 

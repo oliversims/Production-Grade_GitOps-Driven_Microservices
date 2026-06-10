@@ -2,7 +2,7 @@
 set -e
 
 # This script installs tools on the bastion host.
-# Run order: AWS CLI, kubectl, Helm, eksctl, then Git.
+# Run order: AWS CLI, kubectl, Helm, eksctl.
 
 # Step 1: Update Ubuntu and install packages we need for the downloads below
 apt-get update -y
@@ -30,26 +30,8 @@ tar -xzf /tmp/eksctl.tar.gz -C /tmp
 mv /tmp/eksctl /usr/local/bin/eksctl
 rm -f /tmp/eksctl.tar.gz
 
-# Step 6: Install Git (SSH key is installed by user_data before this script runs)
-apt-get install -y git openssh-client
-
-sudo -u ubuntu git config --global user.name "oliversims"
-sudo -u ubuntu git config --global user.email "simsoliver1994@gmail.com"
-
-if ! grep -q github.com /home/ubuntu/.ssh/known_hosts 2>/dev/null; then
-  sudo -u ubuntu ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts 2>/dev/null
-  chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts
-  chmod 600 /home/ubuntu/.ssh/known_hosts
-fi
-
-# Step 7: Show installed versions
+# Step 6: Show installed versions
 aws --version
 kubectl version --client
 helm version
 eksctl version
-git --version
-
-echo ""
-echo "=== GitHub ==="
-echo "SSH key installed. Clone with:"
-echo "  git clone git@github.com:YOUR-ORG/YOUR-REPO.git"

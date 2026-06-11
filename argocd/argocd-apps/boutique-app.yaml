@@ -20,7 +20,7 @@ spec:
   # SOURCE: Where to get the Kubernetes manifests from
   # -------------------------------------------------------
   source:
-    repoURL: https://github.com/laxmikantagiri/Production-Grade_GitOps-Driven_Microservices-Demo.git
+    repoURL: https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git
     # ↑ The GitHub repository ArgoCD will watch.
     # Any change pushed to this repo can trigger a sync.
 

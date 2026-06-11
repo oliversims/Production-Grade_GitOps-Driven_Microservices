@@ -61,6 +61,8 @@ module "bastion_host" {
   })
 
   user_data_replace_on_change = true
+  # Restart bastion anytime (PowerShell — quotes required):
+  #   terraform apply -replace="module.bastion_host.aws_instance.this[0]"
 
   tags = {
     Terraform   = "true"

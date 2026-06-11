@@ -1,59 +1,106 @@
+# -------------------------------------------------------
+# WORKFLOW: Microservices Trigger CI
+# -------------------------------------------------------
+# This is the TRIGGER workflow — its only job is to:
+# 1. Detect WHICH microservices changed in a push
+# 2. Trigger the actual build pipeline for only those services
+#
+# This is smart CI — instead of rebuilding ALL 10 microservices
+# on every push, it only rebuilds the ones that actually changed.
 name: Microservices Trigger CI
 
+# -------------------------------------------------------
+# TRIGGER: When does this workflow run?
+# -------------------------------------------------------
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]  # Only runs when code is pushed to the "main" branch
     paths:
-      - "src/**"
+      - "src/**"        # AND only if the push contains changes inside the "src/" folder.
+                        # If you only change README.md or a Terraform file,
+                        # this workflow will NOT run. Saves unnecessary builds.
 
+# -------------------------------------------------------
+# PERMISSIONS: What this workflow is allowed to do
+# -------------------------------------------------------
 permissions:
-  contents: read
-  packages: write
+  contents: read   # Can read the repository code (needed for git checkout)
+  packages: write  # Can push Docker images to GitHub Container Registry (GHCR)
 
 jobs:
-  # -------------------------------
-  # Job 1: Detect changed services
-  # -------------------------------
+
+  # -------------------------------------------------------
+  # JOB 1: Detect which services changed
+  # -------------------------------------------------------
+  # This job figures out WHICH microservices were modified
+  # in this push so we only build those specific ones.
   detect-changes:
     runs-on: ubuntu-latest
+
+    # This job passes its result to Job 2 via outputs.
+    # Think of it as: "Job 1 returns a value that Job 2 can read."
     outputs:
-      services: ${{ steps.changed.outputs.services }}
+      services: ${{ steps.changed.outputs.services }}  # A JSON list of changed service names
+                                                        # e.g., ["auth", "orders", "gateway"]
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Download the FULL git history (not just the latest commit).
+                          # This is needed so we can compare the current commit
+                          # against the previous one to see what changed.
 
       - name: Detect changed services
-        id: changed
+        id: changed  # Give this step an ID so its output can be referenced later
         run: |
+          # Get the list of ALL files that changed between the previous commit and this one.
+          # "|| true" prevents the workflow from failing if this command returns no results.
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} || true)
+          #                               ↑ previous commit SHA     ↑ current commit SHA
+
           SERVICES=$(echo "$CHANGED" \
-            | grep '^src/' || true \
-            | cut -d'/' -f2 \
-            | sort -u \
+            | grep '^src/' || true \       # Keep only files that start with "src/"
+            | cut -d'/' -f2 \              # Extract just the service name (the 2nd folder)
+                                           # e.g., "src/auth/index.js" → "auth"
+            | sort -u \                    # Remove duplicates and sort alphabetically
             | jq -R -s -c 'split("\n") | map(select(length > 0))')
+                                           # Convert the list into a JSON array
+                                           # e.g., ["auth", "orders"]
 
-          echo "Detected services: $SERVICES"
-          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "Detected services: $SERVICES"           # Print for debugging in the logs
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT   # Pass the result to Job 2
 
 
-  # --------------------------------------------------
-  # Job 2: Call reusable workflow (matrix per service)
-  # --------------------------------------------------
+  # -------------------------------------------------------
+  # JOB 2: Build and push changed services
+  # -------------------------------------------------------
+  # This job runs ONCE PER changed service (matrix strategy).
+  # It calls a separate reusable workflow to do the actual building.
   build-and-push:
-    needs: detect-changes
+    needs: detect-changes  # Wait for Job 1 to finish before starting
+
     if: needs.detect-changes.outputs.services != '[]'
+    # ↑ Only run if Job 1 found at least one changed service.
+    # If the services list is empty "[]", skip this job entirely.
+    # This prevents unnecessary workflow runs.
 
     strategy:
-      fail-fast: false
+      fail-fast: false  # If one service fails to build, DON'T cancel the others.
+                        # Each service builds independently.
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+        # ↑ Loop through the list of changed services from Job 1.
+        # If ["auth", "orders"] changed, this job runs TWICE:
+        #   once with service=auth
+        #   once with service=orders
+        # Both run in PARALLEL at the same time.
 
-    # 🚨 IMPORTANT:
-    # Reusable workflows are called at JOB level
+    # Call a separate reusable workflow to do the actual build.
+    # This keeps this file clean — the build logic lives in microservice-ci.yaml.
+    # 🚨 NOTE: Reusable workflows must be called at the JOB level, not inside a step.
     uses: ./.github/workflows/microservice-ci.yaml
 
     with:
-      service: ${{ matrix.service }}
+      service: ${{ matrix.service }}  # Pass the current service name to the reusable workflow
+                                      # e.g., "auth" or "orders"

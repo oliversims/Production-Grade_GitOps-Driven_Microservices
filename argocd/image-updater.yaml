@@ -61,36 +61,36 @@ spec:
       # for each microservice in the GitHub Container Registry (GHCR).
       images:
         - alias: adservice                  # Friendly name used internally by the updater
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/adservice
+          imageName: ghcr.io/oliversims/microservices-demo/adservice
           # ↑ The full path to the image in GHCR (GitHub Container Registry)
           # Format: ghcr.io/<github-username>/<repo-name>/<service-name>
 
         - alias: cartservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/cartservice
+          imageName: ghcr.io/oliversims/microservices-demo/cartservice
 
         - alias: checkoutservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/checkoutservice
+          imageName: ghcr.io/oliversims/microservices-demo/checkoutservice
 
         - alias: currencyservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/currencyservice
+          imageName: ghcr.io/oliversims/microservices-demo/currencyservice
 
         - alias: emailservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/emailservice
+          imageName: ghcr.io/oliversims/microservices-demo/emailservice
 
         - alias: frontend
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/frontend
+          imageName: ghcr.io/oliversims/microservices-demo/frontend
 
         - alias: paymentservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/paymentservice
+          imageName: ghcr.io/oliversims/microservices-demo/paymentservice
 
         - alias: productcatalogservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/productcatalogservice
+          imageName: ghcr.io/oliversims/microservices-demo/productcatalogservice
 
         - alias: recommendationservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/recommendationservice
+          imageName: ghcr.io/oliversims/microservices-demo/recommendationservice
 
         - alias: shippingservice
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/shippingservice
+          imageName: ghcr.io/oliversims/microservices-demo/shippingservice
 
         - alias: loadgenerator             # Simulates user traffic for testing
-          imageName: ghcr.io/laxmikantagiri/microservices-demo/loadgenerator
+          imageName: ghcr.io/oliversims/microservices-demo/loadgenerator

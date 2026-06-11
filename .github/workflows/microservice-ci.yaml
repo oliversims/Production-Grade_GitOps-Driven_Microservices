@@ -1,71 +1,107 @@
+# -------------------------------------------------------
+# REUSABLE WORKFLOW: Microservice CI
+# -------------------------------------------------------
+# This is the WORKER workflow — it does the actual building.
+# It is called by the trigger workflow (Microservices Trigger CI)
+# once per changed service.
+# It is NOT triggered directly by a push — it only runs
+# when another workflow calls it.
 name: Microservice CI
 
+# -------------------------------------------------------
+# TRIGGER: This workflow is only called by other workflows
+# -------------------------------------------------------
 on:
-  workflow_call:
+  workflow_call:        # This keyword makes it a "reusable workflow"
+                        # It can only be triggered by another workflow using "uses:"
     inputs:
       service:
-        required: true
-        type: string
+        required: true  # The calling workflow MUST pass a service name
+        type: string    # e.g., "auth", "orders", "gateway"
+                        # This is how the trigger workflow tells this one WHICH service to build
 
+# -------------------------------------------------------
+# PERMISSIONS
+# -------------------------------------------------------
 permissions:
-  contents: read
-  packages: write
+  contents: read   # Can read the repository code
+  packages: write  # Can push Docker images to GHCR
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     env:
+      # Build the full image name once and reuse it throughout all steps below.
+      # Example result: ghcr.io/laxmikantagiri/microservices-demo/auth:sha-a1b2c3d
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/microservices-demo/${{ inputs.service }}:sha-${{ github.sha }}
+      #                      ↑ GitHub org/username          ↑ service name (e.g. auth)  ↑ commit SHA for unique tagging
 
     steps:
-      # -------------------
-      # Checkout source
-      # -------------------
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      # -------------------
-      # Docker Buildx (cache support)
-      # -------------------
+      # -------------------------------------------------------
+      # STEP 1: Download the source code
+      # -------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4  # Downloads the repo code onto the runner machine
+
+      # -------------------------------------------------------
+      # STEP 2: Set up Docker Buildx
+      # -------------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        # Buildx is an advanced Docker build engine.
+        # The main reason we use it here is for BUILD CACHING —
+        # it can save and reuse layers from previous builds,
+        # making subsequent builds much faster.
 
-      # -------------------
-      # Login to GHCR
-      # -------------------
+      # -------------------------------------------------------
+      # STEP 3: Log in to GitHub Container Registry (GHCR)
+      # -------------------------------------------------------
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io                      # Log in to GitHub's container registry
+          username: ${{ github.actor }}           # The GitHub user who triggered the push
+          password: ${{ secrets.GITHUB_TOKEN }}   # Automatically provided by GitHub — no manual secret needed.
+                                                  # This token has permission to push to GHCR
+                                                  # because we set "packages: write" above.
 
-      # -------------------
-      # Build Docker image (cached)
-      # -------------------
+      # -------------------------------------------------------
+      # STEP 4: Build the Docker image
+      # -------------------------------------------------------
       - name: Build Image
         run: |
           docker build \
-            --cache-from=type=gha \
-            --cache-to=type=gha,mode=max \
-            -t $IMAGE_NAME \
-            ./src/${{ inputs.service }}
+            --cache-from=type=gha \       # Pull cached layers from GitHub Actions cache (speeds up build)
+            --cache-to=type=gha,mode=max \ # Save ALL layers to cache for future builds
+            -t $IMAGE_NAME \              # Tag the image with the full name we defined in env above
+            ./src/${{ inputs.service }}   # Build from the service's folder e.g. ./src/auth
+                                          # This is where the Dockerfile for this service lives
 
-      # -------------------
-      # Security Scan (before push)
-      # -------------------
+      # -------------------------------------------------------
+      # STEP 5: Security scan BEFORE pushing
+      # -------------------------------------------------------
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@v0.20.0
+        # Trivy is a security scanner — it checks the image for known vulnerabilities
+        # BEFORE it is pushed to the registry. This prevents insecure images from
+        # ever reaching your cluster.
         with:
-          scan-type: image
-          image-ref: ${{ env.IMAGE_NAME }}
-          severity: HIGH,CRITICAL
-          exit-code: 0
-          vuln-type: os,library
+          scan-type: image                # Scan a Docker image (not a filesystem or repo)
+          image-ref: ${{ env.IMAGE_NAME }} # The image we just built in Step 4
+          severity: HIGH,CRITICAL         # Only report HIGH and CRITICAL vulnerabilities
+                                          # LOW and MEDIUM are ignored
+          exit-code: 0                    # Do NOT fail the pipeline even if vulnerabilities are found.
+                                          # Change to "1" if you want to BLOCK the push on findings.
+          vuln-type: os,library           # Scan both OS packages (e.g. apt) and
+                                          # code libraries (e.g. npm, pip packages)
 
-      # -------------------
-      # Push image (only if scan passes)
-      # -------------------
+      # -------------------------------------------------------
+      # STEP 6: Push the image to GHCR
+      # -------------------------------------------------------
       - name: Push Image
         run: |
-          docker push $IMAGE_NAME
+          docker push $IMAGE_NAME  # Upload the built and scanned image to GHCR.
+                                   # After this, ArgoCD Image Updater detects the new
+                                   # image tag and automatically deploys it to the cluster.

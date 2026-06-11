@@ -19,6 +19,12 @@ on:
       - "src/**"        # AND only if the push contains changes inside the "src/" folder.
                         # If you only change README.md or a Terraform file,
                         # this workflow will NOT run. Saves unnecessary builds.
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Service to build (e.g. adservice). Leave empty to detect from last commit."
+        required: false
+        type: string
 
 # -------------------------------------------------------
 # PERMISSIONS: What this workflow is allowed to do
@@ -52,24 +58,33 @@ jobs:
                           # against the previous one to see what changed.
 
       - name: Detect changed services
-        id: changed  # Give this step an ID so its output can be referenced later
+        id: changed
         run: |
-          # Get the list of ALL files that changed between the previous commit and this one.
-          # "|| true" prevents the workflow from failing if this command returns no results.
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} || true)
-          #                               ↑ previous commit SHA     ↑ current commit SHA
+          # Manual run: build the service named in workflow_dispatch input
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.service }}" ]; then
+            SERVICES='["${{ inputs.service }}"]'
+            echo "Manual trigger for service: ${{ inputs.service }}"
+            echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
+          # Push event: compare previous commit to current commit
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="$(git rev-parse HEAD~1)"
+          fi
+
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
+
+          # Keep src/ paths, extract service folder name, dedupe, output JSON array
           SERVICES=$(echo "$CHANGED" \
-            | grep '^src/' || true \       # Keep only files that start with "src/"
-            | cut -d'/' -f2 \              # Extract just the service name (the 2nd folder)
-                                           # e.g., "src/auth/index.js" → "auth"
-            | sort -u \                    # Remove duplicates and sort alphabetically
+            | grep '^src/' || true \
+            | cut -d'/' -f2 \
+            | sort -u \
             | jq -R -s -c 'split("\n") | map(select(length > 0))')
-                                           # Convert the list into a JSON array
-                                           # e.g., ["auth", "orders"]
 
-          echo "Detected services: $SERVICES"           # Print for debugging in the logs
-          echo "services=$SERVICES" >> $GITHUB_OUTPUT   # Pass the result to Job 2
+          echo "Detected services: $SERVICES"
+          echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
 
 
   # -------------------------------------------------------

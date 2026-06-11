@@ -73,11 +73,10 @@ jobs:
       - name: Build Image
         run: |
           docker build \
-            --cache-from=type=gha \       # Pull cached layers from GitHub Actions cache (speeds up build)
-            --cache-to=type=gha,mode=max \ # Save ALL layers to cache for future builds
-            -t $IMAGE_NAME \              # Tag the image with the full name we defined in env above
-            ./src/${{ inputs.service }}   # Build from the service's folder e.g. ./src/auth
-                                          # This is where the Dockerfile for this service lives
+            --cache-from=type=gha \
+            --cache-to=type=gha,mode=max \
+            -t "$IMAGE_NAME" \
+            "./src/${{ inputs.service }}"
 
       # -------------------------------------------------------
       # STEP 5: Security scan BEFORE pushing
@@ -101,7 +100,4 @@ jobs:
       # STEP 6: Push the image to GHCR
       # -------------------------------------------------------
       - name: Push Image
-        run: |
-          docker push $IMAGE_NAME  # Upload the built and scanned image to GHCR.
-                                   # After this, ArgoCD Image Updater detects the new
-                                   # image tag and automatically deploys it to the cluster.
+        run: docker push "$IMAGE_NAME"

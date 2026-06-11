@@ -1,10 +1,42 @@
-apiVersion: gateway.k8s.aws/v1beta1
-kind: TargetGroupConfiguration
+# -------------------------------------------------------
+# TARGET GROUP CONFIGURATION: Tell AWS how to route traffic to ArgoCD
+# -------------------------------------------------------
+# This is an AWS-specific custom resource that configures
+# how the AWS Load Balancer routes incoming traffic to
+# the ArgoCD server pods running inside the cluster.
+#
+# Think of it as: "Instructions for the AWS Load Balancer
+# on HOW to forward traffic to ArgoCD."
+apiVersion: gateway.k8s.aws/v1beta1  # AWS Gateway API custom resource
+kind: TargetGroupConfiguration       # Configures an AWS Target Group
 metadata:
-  name: argo-tg-config
-  namespace: argocd
+  name: argo-tg-config   # Name of this configuration
+  namespace: argocd      # Must be in the argocd namespace because
+                         # that is where the ArgoCD server lives
+
 spec:
+
+  # -------------------------------------------------------
+  # TARGET REFERENCE: Which service to send traffic to
+  # -------------------------------------------------------
   targetReference:
-    name: argo-cd-argocd-server
+    name: argo-cd-argocd-server  # The name of the Kubernetes Service that
+                                  # sits in front of the ArgoCD server pods.
+                                  # This is the Service created automatically
+                                  # when ArgoCD is installed via Helm.
+                                  # The Load Balancer will forward traffic to this Service.
+
+  # -------------------------------------------------------
+  # DEFAULT CONFIGURATION: How to register targets in AWS
+  # -------------------------------------------------------
   defaultConfiguration:
-    targetType: ip
+    targetType: ip  # Tell AWS to route traffic DIRECTLY to the pod IP addresses.
+                    #
+                    # There are two target types in AWS:
+                    #
+                    # "instance" → routes to the EC2 node first,
+                    #              then the node forwards to the pod (extra hop)
+                    #
+                    # "ip"       → routes DIRECTLY to the pod IP (faster, more efficient)
+                    #              This is the recommended mode for Kubernetes/EKS
+                    #              because pods have their own IPs via the VPC CNI plugin.

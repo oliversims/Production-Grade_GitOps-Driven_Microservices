@@ -54,6 +54,15 @@ sleep 2
 /opt/bastion/install-external-dns.sh
 
 echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Step 6: Install ArgoCD"
+echo ""
+sleep 2
+/opt/bastion/install-argocd.sh
+
+echo ""
 echo "========================================"
 echo "  Cluster setup finished"
 echo "========================================"

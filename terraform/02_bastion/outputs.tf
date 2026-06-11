@@ -33,12 +33,17 @@ output "install_gateway_api_crds_command" {
   value       = "/opt/bastion/install-gateway-api-crds.sh"
 }
 
-output "github_ssh_public_key" {
-  description = "Add this to GitHub once (Settings → SSH keys). Same key is reused when the bastion is recreated."
-  value       = tls_private_key.github_key.public_key_openssh
+output "install_argocd_command" {
+  description = "Run on the bastion after install-external-dns.sh (or use run-setup.sh for all steps)"
+  value       = "/opt/bastion/install-argocd.sh"
 }
 
-output "github_ssh_public_key_file" {
-  description = "Path to the GitHub public key file on your machine"
-  value       = abspath("${path.module}/github-key.pub")
-}
+# output "github_ssh_public_key" {
+#   description = "Add this to GitHub once (Settings → SSH keys). Same key is reused when the bastion is recreated."
+#   value       = tls_private_key.github_key.public_key_openssh
+# }
+
+# output "github_ssh_public_key_file" {
+#   description = "Path to the GitHub public key file on your machine"
+#   value       = abspath("${path.module}/github-key.pub")
+# }

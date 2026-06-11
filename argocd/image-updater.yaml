@@ -1,20 +1,69 @@
-apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+# -------------------------------------------------------
+# ARGOCD IMAGE UPDATER: Automatically update container images
+# -------------------------------------------------------
+# ArgoCD Image Updater is a tool that watches your container
+# registries (like ECR, GHCR, DockerHub) for new image versions.
+# When it finds a newer image, it automatically updates your
+# Kubernetes deployments WITHOUT you having to manually edit
+# any YAML files or trigger a pipeline.
+#
+# Think of it as: "Auto-update" for your microservice images.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1  # ArgoCD Image Updater's custom API
 kind: ImageUpdater
 metadata:
-  name: boutique-image-updater
-  namespace: argocd
+  name: boutique-image-updater  # Name of this updater configuration
+  namespace: argocd             # Must live in the argocd namespace
+
 spec:
-  namespace: argocd
+  namespace: argocd  # The namespace where ArgoCD is running
+
+  # -------------------------------------------------------
+  # APPLICATION REFS: Which ArgoCD apps to watch and update
+  # -------------------------------------------------------
   applicationRefs:
-    - namePattern: "boutique-*"
+    - namePattern: "boutique-*"  # Watch ALL ArgoCD applications whose name starts with "boutique-"
+                                  # e.g., boutique-frontend, boutique-orders, boutique-auth
+                                  # This is a wildcard pattern — one rule covers all boutique apps
 
+      # -------------------------------------------------------
+      # COMMON UPDATE SETTINGS: Rules that apply to ALL images below
+      # -------------------------------------------------------
       commonUpdateSettings:
-        updateStrategy: "newest-build"
-        allowTags: "regexp:^sha-[a-f0-9]{7,40}$"
+        updateStrategy: "newest-build"  # Always use the most recently BUILT image.
+                                        # When a new image is pushed to the registry,
+                                        # this tells the updater to pick the latest one.
 
+        allowTags: "regexp:^sha-[a-f0-9]{7,40}$"
+        # Only consider image tags that match this pattern.
+        # This is a Regular Expression (regex) filter.
+        #
+        # Breaking down the pattern:
+        #   ^        → must start here
+        #   sha-     → tag must begin with "sha-"
+        #   [a-f0-9] → followed by hex characters (0-9 and a-f)
+        #   {7,40}   → between 7 and 40 characters long
+        #   $        → must end here
+        #
+        # In practice, this matches tags like:
+        #   sha-a1b2c3d          ✅ (GitHub commit SHA format)
+        #   sha-abc1234def5678   ✅
+        #   latest               ❌ (rejected — not a SHA tag)
+        #   v1.0.0               ❌ (rejected — not a SHA tag)
+        #
+        # Why? Because SHA-based tags are unique per commit.
+        # Using "latest" is risky — you never know exactly what version is running.
+        # SHA tags give you full traceability: tag → commit → code.
+
+      # -------------------------------------------------------
+      # IMAGES: The list of microservices to watch for updates
+      # -------------------------------------------------------
+      # Each entry tells the updater WHERE to find the image
+      # for each microservice in the GitHub Container Registry (GHCR).
       images:
-        - alias: adservice
+        - alias: adservice                  # Friendly name used internally by the updater
           imageName: ghcr.io/laxmikantagiri/microservices-demo/adservice
+          # ↑ The full path to the image in GHCR (GitHub Container Registry)
+          # Format: ghcr.io/<github-username>/<repo-name>/<service-name>
 
         - alias: cartservice
           imageName: ghcr.io/laxmikantagiri/microservices-demo/cartservice
@@ -43,6 +92,5 @@ spec:
         - alias: shippingservice
           imageName: ghcr.io/laxmikantagiri/microservices-demo/shippingservice
 
-        - alias: loadgenerator
+        - alias: loadgenerator             # Simulates user traffic for testing
           imageName: ghcr.io/laxmikantagiri/microservices-demo/loadgenerator
-

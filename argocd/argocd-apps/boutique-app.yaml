@@ -1,23 +1,70 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+# -------------------------------------------------------
+# ARGOCD APPLICATION: Deploy the entire Boutique app
+# -------------------------------------------------------
+# This tells ArgoCD to watch a Git repository and
+# automatically deploy EVERYTHING inside it to the cluster.
+# This is the heart of GitOps — Git is the single source
+# of truth for what runs in the cluster.
+apiVersion: argoproj.io/v1alpha1  # ArgoCD's custom API group
+kind: Application                  # This is an ArgoCD Application resource
 metadata:
-  name: boutique-app
-  namespace: argocd
-spec:
-  project: default
+  name: boutique-app  # Name visible in the ArgoCD dashboard
+  namespace: argocd   # Must live in the argocd namespace
 
+spec:
+  project: default  # Uses the default ArgoCD project (no restrictions).
+                    # In larger teams you would create separate projects
+                    # per team (e.g., "frontend-team", "backend-team")
+
+  # -------------------------------------------------------
+  # SOURCE: Where to get the Kubernetes manifests from
+  # -------------------------------------------------------
   source:
     repoURL: https://github.com/laxmikantagiri/Production-Grade_GitOps-Driven_Microservices-Demo.git
-    targetRevision: HEAD
-    path: .
+    # ↑ The GitHub repository ArgoCD will watch.
+    # Any change pushed to this repo can trigger a sync.
 
+    targetRevision: HEAD  # Always use the latest commit on the default branch.
+                          # HEAD means "whatever the most recent commit is".
+                          # You could also pin to a specific branch like "main"
+                          # or a specific commit SHA like "a1b2c3d".
+
+    path: .               # The dot "." means "look at the ROOT of the repository".
+                          # ArgoCD will scan the entire repo for Kubernetes manifests.
+                          # Compare this to the UI app earlier which used "src/ui/chart"
+                          # to look at only one specific folder.
+                          # Here we are deploying EVERYTHING in the repo at once.
+
+  # -------------------------------------------------------
+  # DESTINATION: Where to deploy inside the cluster
+  # -------------------------------------------------------
   destination:
-    server: https://kubernetes.default.svc
-    namespace: boutique-app
+    server: https://kubernetes.default.svc  # Deploy to THIS cluster (the local cluster
+                                            # where ArgoCD itself is running).
+                                            # ArgoCD can manage multiple clusters;
+                                            # this URL always means "local cluster".
 
+    namespace: boutique-app  # Deploy all resources into the "boutique-app" namespace.
+                             # This keeps the boutique app isolated from other apps
+                             # running in the same cluster.
+
+  # -------------------------------------------------------
+  # SYNC POLICY: How ArgoCD keeps the cluster in sync
+  # -------------------------------------------------------
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      prune: true     # If a resource is DELETED from Git,
+                      # ArgoCD will automatically DELETE it from the cluster too.
+                      # Without this, deleted resources in Git would keep
+                      # running in the cluster as "ghost" resources.
+
+      selfHeal: true  # If someone manually changes something in the cluster
+                      # (e.g., kubectl edit deployment), ArgoCD will
+                      # automatically REVERT it back to match what is in Git.
+                      # This enforces Git as the single source of truth.
+
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=true  # If the "boutique-app" namespace does not exist yet,
+                              # ArgoCD will automatically CREATE it before deploying.
+                              # Without this, the deployment would fail if the
+                              # namespace doesn't already exist.

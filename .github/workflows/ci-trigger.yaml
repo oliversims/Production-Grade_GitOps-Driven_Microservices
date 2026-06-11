@@ -74,14 +74,17 @@ jobs:
             BEFORE="$(git rev-parse HEAD~1)"
           fi
 
-          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" 2>/dev/null || true)
 
-          # Keep src/ paths, extract service folder name, dedupe, output JSON array
+          # Extract service name from paths like src/adservice/... (must stay a single pipeline)
           SERVICES=$(echo "$CHANGED" \
-            | grep '^src/' || true \
-            | cut -d'/' -f2 \
+            | awk -F/ '/^src\// { print $2 }' \
             | sort -u \
             | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          if [ -z "$SERVICES" ]; then
+            SERVICES='[]'
+          fi
 
           echo "Detected services: $SERVICES"
           echo "services=$SERVICES" >> "$GITHUB_OUTPUT"

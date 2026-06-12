@@ -32,16 +32,20 @@ else
   git sparse-checkout set argocd
 fi
 
-# Step 2: Make sure ArgoCD is running
-echo "--- Step 2: Check ArgoCD is ready ---"
+# Step 2: Connect kubectl to the EKS cluster
+echo "--- Step 2: Configure kubeconfig ---"
+/opt/bastion/configure-kubeconfig.sh
+
+# Step 3: Make sure ArgoCD is running
+echo "--- Step 3: Check ArgoCD is ready ---"
 kubectl rollout status deployment/argo-cd-argocd-server -n argocd --timeout=60s
 
-# Step 3: Apply the ArgoCD Application
-echo "--- Step 3: Apply boutique-app Application ---"
+# Step 4: Apply the ArgoCD Application
+echo "--- Step 4: Apply boutique-app Application ---"
 kubectl apply -f "$APP_FILE"
 
-# Step 4: Show status
-echo "--- Step 4: Status ---"
+# Step 5: Show status
+echo "--- Step 5: Status ---"
 kubectl get application boutique-app -n argocd
 
 echo ""

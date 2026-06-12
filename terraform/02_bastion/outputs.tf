@@ -38,6 +38,11 @@ output "install_argocd_command" {
   value       = "/opt/bastion/install-argocd.sh"
 }
 
+output "apply_boutique_app_command" {
+  description = "Run on the bastion after run-setup.sh to deploy the boutique app via ArgoCD"
+  value       = "/opt/bastion/apply-boutique-app.sh"
+}
+
 # output "github_ssh_public_key" {
 #   description = "Add this to GitHub once (Settings → SSH keys). Same key is reused when the bastion is recreated."
 #   value       = tls_private_key.github_key.public_key_openssh

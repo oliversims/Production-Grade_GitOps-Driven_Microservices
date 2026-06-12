@@ -20,8 +20,8 @@ spec:
   # SOURCE: Where to get the Kubernetes manifests from
   # -------------------------------------------------------
   source:
-    repoURL: git@github.com:oliversims/Production-Grade_GitOps-Driven_Microservices.git
-    # ↑ Private repo — ArgoCD uses the SSH deploy key registered by apply-boutique-app.sh.
+    repoURL: https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git
+    # ↑ Public repo — ArgoCD clones over HTTPS with no credentials.
     # Any change pushed to this repo can trigger a sync.
 
     targetRevision: HEAD  # Always use the latest commit on the default branch.

@@ -55,7 +55,7 @@ echo "Removing ArgoCD Application (stops GitOps sync)..."
 kubectl delete application boutique-app -n argocd --ignore-not-found --wait=true --timeout=300s
 
 echo "Removing image updater config (if present)..."
-kubectl delete imageupdater boutique-image-updater -n argocd --ignore-not-found
+kubectl delete imageupdaters boutique-image-updater -n argocd --ignore-not-found 2>/dev/null || true
 
 echo "Removing boutique-app namespace (app pods, HTTPRoute, TargetGroupConfiguration)..."
 kubectl delete namespace boutique-app --ignore-not-found --wait=true --timeout=300s

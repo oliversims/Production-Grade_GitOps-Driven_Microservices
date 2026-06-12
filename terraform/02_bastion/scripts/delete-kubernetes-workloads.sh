@@ -72,7 +72,7 @@ echo ""
 
 if [ -f "$ARGOCD_TARGET_GRP" ]; then
   echo "Removing ArgoCD TargetGroupConfiguration..."
-  kubectl delete -f "$ARGOCD_TARGET_GRP" --ignore-not-found --wait=true --timeout=120s
+  kubectl delete -f "$ARGOCD_TARGET_GRP" --ignore-not-found --timeout=60s 2>/dev/null || true
 else
   echo "ArgoCD target group file not found, skipping file delete."
 fi
@@ -120,7 +120,7 @@ kubectl delete httproute --all -A --ignore-not-found --wait=true --timeout=300s 
 
 if [ -f "$MANIFESTS_DIR/gateway.yaml" ]; then
   echo "Removing Gateway (this deletes the AWS ALB)..."
-  kubectl delete -f "$MANIFESTS_DIR/gateway.yaml" --ignore-not-found --wait=true --timeout=300s
+  kubectl delete -f "$MANIFESTS_DIR/gateway.yaml" --ignore-not-found --timeout=120s 2>/dev/null || true
 else
   echo "gateway.yaml not found, skipping."
 fi
@@ -141,12 +141,12 @@ echo "Load balancer wait finished."
 
 if [ -f "$MANIFESTS_DIR/alb-config.yaml" ]; then
   echo "Removing LoadBalancerConfiguration..."
-  kubectl delete -f "$MANIFESTS_DIR/alb-config.yaml" --ignore-not-found --wait=true --timeout=120s
+  kubectl delete -f "$MANIFESTS_DIR/alb-config.yaml" --ignore-not-found --timeout=60s 2>/dev/null || true
 fi
 
 if [ -f "$MANIFESTS_DIR/gateway-class.yaml" ]; then
   echo "Removing GatewayClass..."
-  kubectl delete -f "$MANIFESTS_DIR/gateway-class.yaml" --ignore-not-found --wait=true --timeout=120s
+  kubectl delete -f "$MANIFESTS_DIR/gateway-class.yaml" --ignore-not-found --timeout=60s 2>/dev/null || true
 fi
 
 echo "Gateway manifests removed."

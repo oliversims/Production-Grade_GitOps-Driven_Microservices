@@ -9,11 +9,25 @@ set -e
 # What this script does:
 #   1. Downloads boutique-app.yaml from your private GitHub repo
 #   2. Connects kubectl to the EKS cluster
-#   3. Gives ArgoCD the SSH key it needs to read the private repo
-#   4. Registers the ArgoCD Application — ArgoCD then syncs kustomization.yaml
+#   3. Registers GitHub SSH credentials with ArgoCD (private Git repo)
+#   4. Registers GHCR credentials with ArgoCD (private Helm chart on GHCR)
+#   5. Applies the ArgoCD Application — ArgoCD syncs kustomization.yaml
+#
+# Prerequisites:
+#   - GitHub deploy key on the bastion (~/.ssh/id_ed25519) — created by user_data
+#   - GHCR_PAT env var OR ~/.ghcr_pat file (GitHub classic PAT with read:packages)
 #
 # Usage:
+#   export GHCR_PAT="ghp_..."          # first run, or after bastion recreate
 #   /opt/bastion/apply-boutique-app.sh
+#
+# Optional — save PAT so it survives bastion reboot (same instance):
+#   echo "ghp_..." > ~/.ghcr_pat && chmod 600 ~/.ghcr_pat
+#
+# To update this script from a private repo (raw.githubusercontent.com returns 404):
+#   cd ~/Production-Grade_GitOps-Driven_Microservices && git pull
+#   sudo cp terraform/02_bastion/scripts/apply-boutique-app.sh /opt/bastion/
+#   sudo chmod +x /opt/bastion/apply-boutique-app.sh
 
 # -------------------------------------------------------
 # VARIABLES: Paths and settings used throughout the script
@@ -30,6 +44,15 @@ GITHUB_REPO_URL="git@github.com:oliversims/Production-Grade_GitOps-Driven_Micros
 SSH_KEY="$HOME/.ssh/id_ed25519"
 # ↑ GitHub deploy key injected on bastion boot by user_data.sh.tpl
 #   The same key is used for git clone on the bastion AND for ArgoCD repo access
+
+GHCR_OWNER="${GHCR_OWNER:-oliversims}"
+# ↑ GitHub username / GHCR namespace (override with: export GHCR_OWNER=other-user)
+
+GHCR_HELM_URL="oci://ghcr.io/${GHCR_OWNER}"
+# ↑ Must match the repo field in kustomization.yaml helmCharts section
+
+GHCR_PAT_FILE="$HOME/.ghcr_pat"
+# ↑ Optional file to store PAT across bastion reboots (chmod 600)
 
 echo "=== Deploy boutique app via ArgoCD ==="
 
@@ -96,26 +119,67 @@ kubectl label secret github-repo-creds -n argocd \
   argocd.argoproj.io/secret-type=repository --overwrite
 
 # -------------------------------------------------------
-# Step 4: Make sure ArgoCD is running
+# Step 4: Register GHCR Helm credentials with ArgoCD
+# -------------------------------------------------------
+# kustomization.yaml pulls the onlineboutique chart from private GHCR:
+#   repo: oci://ghcr.io/oliversims
+# Without this secret, ArgoCD fails with:
+#   "ghcr.io/.../onlineboutique: 401 unauthorized"
+#
+# ArgoCD repo-server runs "helm pull" during kustomize build — it needs OCI registry auth.
+echo "--- Step 4: Register GHCR Helm credentials with ArgoCD ---"
+
+# Load PAT from env var, or from ~/.ghcr_pat if the file exists
+if [ -z "$GHCR_PAT" ] && [ -f "$GHCR_PAT_FILE" ]; then
+  GHCR_PAT=$(cat "$GHCR_PAT_FILE")
+fi
+
+if [ -z "$GHCR_PAT" ]; then
+  echo "ERROR: GHCR_PAT is not set."
+  echo ""
+  echo "Create a GitHub classic PAT with read:packages scope, then either:"
+  echo "  export GHCR_PAT=\"ghp_...\""
+  echo "  /opt/bastion/apply-boutique-app.sh"
+  echo ""
+  echo "Or save it once (survives bastion reboot on the same instance):"
+  echo "  echo \"ghp_...\" > ~/.ghcr_pat && chmod 600 ~/.ghcr_pat"
+  exit 1
+fi
+
+kubectl create secret generic ghcr-helm-creds -n argocd \
+  --from-literal=type=helm \
+  --from-literal=url="$GHCR_HELM_URL" \
+  --from-literal=name=ghcr-helm \
+  --from-literal=enableOCI=true \
+  --from-literal=username="$GHCR_OWNER" \
+  --from-literal=password="$GHCR_PAT" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl label secret ghcr-helm-creds -n argocd \
+  argocd.argoproj.io/secret-type=repository --overwrite
+
+# -------------------------------------------------------
+# Step 5: Make sure ArgoCD is running
 # -------------------------------------------------------
 # Wait until the ArgoCD API server pod is ready before applying the Application.
-echo "--- Step 4: Check ArgoCD is ready ---"
+echo "--- Step 5: Check ArgoCD is ready ---"
 kubectl rollout status deployment/argo-cd-argocd-server -n argocd --timeout=60s
 
 # -------------------------------------------------------
-# Step 5: Apply the ArgoCD Application
+# Step 6: Apply the ArgoCD Application
 # -------------------------------------------------------
 # This creates the boutique-app resource in the argocd namespace.
-# ArgoCD sees it, clones the repo (using the SSH secret from Step 3),
-# reads kustomization.yaml at the repo root, and deploys to boutique-app namespace.
-echo "--- Step 5: Apply boutique-app Application ---"
+# ArgoCD sees it, clones the repo (SSH secret from Step 3),
+# runs kustomize build with helmCharts (GHCR secret from Step 4),
+# and deploys everything to the boutique-app namespace.
+echo "--- Step 6: Apply boutique-app Application ---"
 kubectl apply -f "$APP_FILE"
 
 # -------------------------------------------------------
-# Step 6: Show status
+# Step 7: Show status
 # -------------------------------------------------------
 # SYNC STATUS / HEALTH may show Progressing until ArgoCD finishes the first sync.
-echo "--- Step 6: Status ---"
+echo "--- Step 7: Status ---"
 kubectl get application boutique-app -n argocd
 
 echo ""

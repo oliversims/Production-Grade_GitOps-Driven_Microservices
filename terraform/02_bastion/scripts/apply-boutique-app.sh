@@ -4,21 +4,18 @@ set -e
 # Deploy the boutique app via ArgoCD.
 # Run AFTER install-argocd.sh / run-setup.sh.
 #
-# Easiest setup (no tokens in this script):
-#   1. GitHub repo → Settings → change visibility to Public
-#   2. GHCR packages → Package settings → Change visibility to Public
-#      (onlineboutique chart + microservices-demo images)
+# Requires public GitHub repo + public GHCR packages (no credentials needed).
 #
 # Usage:
 #   /opt/bastion/apply-boutique-app.sh
 
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"
 APP_FILE="$REPO_DIR/argocd/argocd-apps/boutique-app.yaml"
-GITHUB_REPO_URL="git@github.com:oliversims/Production-Grade_GitOps-Driven_Microservices.git"
+GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git"
 
 echo "=== Deploy boutique app via ArgoCD ==="
 
-# Step 1: Get boutique-app.yaml from GitHub
+# Step 1: Get Application manifest from GitHub
 echo "--- Step 1: Get Application manifest from GitHub ---"
 cd "$HOME"
 
@@ -45,7 +42,7 @@ echo "--- Step 2: Configure kubeconfig ---"
 echo "--- Step 3: Check ArgoCD is ready ---"
 kubectl rollout status deployment/argo-cd-argocd-server -n argocd --timeout=60s
 
-# Step 4: Apply the ArgoCD Application
+# Step 4: Apply the ArgoCD Application (triggers sync of kustomization.yaml)
 echo "--- Step 4: Apply boutique-app Application ---"
 kubectl apply -f "$APP_FILE"
 

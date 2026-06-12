@@ -1,10 +1,34 @@
-apiVersion: gateway.k8s.aws/v1beta1
-kind: TargetGroupConfiguration
+# -------------------------------------------------------
+# TARGET GROUP CONFIGURATION: Tell AWS how to reach the frontend pods
+# -------------------------------------------------------
+# This tells the AWS Load Balancer Controller HOW to forward
+# traffic to the frontend service inside the cluster.
+# Specifically, it tells AWS to route DIRECTLY to pod IPs
+# rather than going through the EC2 node first.
+apiVersion: gateway.k8s.aws/v1beta1   # AWS Gateway API custom resource
+kind: TargetGroupConfiguration         # Configures an AWS Target Group
 metadata:
-  name: app-tg-config
-  namespace: boutique-app
+  name: app-tg-config    # Name of this configuration
+  namespace: boutique-app  # Lives in the same namespace as the frontend service
+
 spec:
+
+  # -------------------------------------------------------
+  # TARGET REFERENCE: Which service to configure
+  # -------------------------------------------------------
   targetReference:
-    name: frontend
+    name: frontend  # Points to the "frontend" Kubernetes Service.
+                    # This is the same service the HTTPRoute sends traffic to.
+
+  # -------------------------------------------------------
+  # DEFAULT CONFIGURATION: How AWS registers the targets
+  # -------------------------------------------------------
   defaultConfiguration:
-    targetType: ip
+    targetType: ip  # Route traffic DIRECTLY to the pod IP addresses.
+                    #
+                    # Two options:
+                    # "instance" → Load Balancer → EC2 Node → Pod  (extra hop, slower)
+                    # "ip"       → Load Balancer → Pod directly    (faster, recommended for EKS)
+                    #
+                    # "ip" works because EKS uses the AWS VPC CNI plugin,
+                    # which gives every pod its own real VPC IP address.

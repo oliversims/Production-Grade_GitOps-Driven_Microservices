@@ -1,23 +1,54 @@
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
+# -------------------------------------------------------
+# HTTPROUTE: Route incoming web traffic to the frontend
+# -------------------------------------------------------
+# An HTTPRoute is a Kubernetes Gateway API resource that defines
+# HOW incoming HTTP/HTTPS traffic should be routed to your services.
+# Think of it as: "When someone visits app.oliver14.com,
+# send them to the frontend service."
+#
+# This works together with the Gateway resource (app-alb-gateway)
+# which is the actual AWS Load Balancer sitting in front of everything.
+apiVersion: gateway.networking.k8s.io/v1beta1  # Kubernetes Gateway API (not built-in, installed separately)
+kind: HTTPRoute                                  # Defines routing rules for HTTP/HTTPS traffic
 metadata:
-  name: http-app-route
-  namespace: boutique-app
+  name: http-app-route   # Name of this routing rule
+  namespace: boutique-app  # Lives in the boutique-app namespace where the frontend service is
+
 spec:
+
+  # -------------------------------------------------------
+  # HOSTNAMES: Which domain name triggers this route
+  # -------------------------------------------------------
   hostnames:
-    - "app.oliver14.com"
+    - "app.oliver14.com"  # Only route traffic that comes in for THIS domain.
+                          # If someone visits a different domain pointing to the same
+                          # Load Balancer, this route will NOT handle it.
+
+  # -------------------------------------------------------
+  # PARENT REFS: Which Gateway (Load Balancer) to attach to
+  # -------------------------------------------------------
+  # This route attaches itself to TWO listeners on the same Gateway —
+  # one for HTTP (port 80) and one for HTTPS (port 443).
+  # Both will forward traffic to the frontend service below.
   parentRefs:
   - group: gateway.networking.k8s.io
-    namespace: default
+    namespace: default      # The Gateway lives in the "default" namespace
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: http
+    name: app-alb-gateway   # The name of the Gateway (AWS ALB) we defined earlier
+    sectionName: http       # Attach to the HTTP listener (port 80) on that Gateway
+
   - group: gateway.networking.k8s.io
     namespace: default
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: https
+    name: app-alb-gateway   # Same Gateway
+    sectionName: https      # Also attach to the HTTPS listener (port 443) on that Gateway
+
+  # -------------------------------------------------------
+  # RULES: Where to send the traffic
+  # -------------------------------------------------------
   rules:
   - backendRefs:
-    - name: frontend
-      port: 80
+    - name: frontend  # Send ALL traffic matching this route to the "frontend" Kubernetes Service.
+                      # This is the frontend microservice that serves the website UI.
+      port: 80        # Forward to port 80 on the frontend service
+                      # (the frontend service listens on port 80 internally)

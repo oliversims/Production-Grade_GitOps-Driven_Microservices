@@ -18,37 +18,37 @@ output "bastion_ssh_command" {
   value       = "ssh -i ${abspath(path.module)}/bastion-key.pem ubuntu@${module.bastion_host.public_ip}"
 }
 
-output "configure_kubeconfig_command" {
-  description = "Run on the bastion after 03_eks apply"
-  value       = "/opt/bastion/configure-kubeconfig.sh"
-}
-
-output "install_lbc_command" {
-  description = "Run on the bastion after configure-kubeconfig.sh"
-  value       = "/opt/bastion/install-lbc.sh"
-}
-
-output "install_gateway_api_crds_command" {
-  description = "Run on the bastion after install-lbc.sh"
-  value       = "/opt/bastion/install-gateway-api-crds.sh"
-}
-
-output "install_argocd_command" {
-  description = "Run on the bastion after install-external-dns.sh (or use run-setup.sh for all steps)"
-  value       = "/opt/bastion/install-argocd.sh"
-}
-
-output "apply_boutique_app_command" {
-  description = "Run on the bastion after run-setup.sh to deploy the boutique app via ArgoCD"
-  value       = "/opt/bastion/apply-boutique-app.sh"
-}
-
-# output "github_ssh_public_key" {
-#   description = "Add this to GitHub once (Settings → SSH keys). Same key is reused when the bastion is recreated."
-#   value       = tls_private_key.github_key.public_key_openssh
+# output "configure_kubeconfig_command" {
+#   description = "Run on the bastion after 03_eks apply"
+#   value       = "/opt/bastion/configure-kubeconfig.sh"
 # }
 
-# output "github_ssh_public_key_file" {
-#   description = "Path to the GitHub public key file on your machine"
-#   value       = abspath("${path.module}/github-key.pub")
+# output "install_lbc_command" {
+#   description = "Run on the bastion after configure-kubeconfig.sh"
+#   value       = "/opt/bastion/install-lbc.sh"
 # }
+
+# output "install_gateway_api_crds_command" {
+#   description = "Run on the bastion after install-lbc.sh"
+#   value       = "/opt/bastion/install-gateway-api-crds.sh"
+# }
+
+# output "install_argocd_command" {
+#   description = "Run on the bastion after install-external-dns.sh (or use run-setup.sh for all steps)"
+#   value       = "/opt/bastion/install-argocd.sh"
+# }
+
+# output "apply_boutique_app_command" {
+#   description = "Run on the bastion after run-setup.sh to deploy the boutique app via ArgoCD"
+#   value       = "/opt/bastion/apply-boutique-app.sh"
+# }
+
+# # output "github_ssh_public_key" {
+# #   description = "Add this to GitHub once (Settings → SSH keys). Same key is reused when the bastion is recreated."
+# #   value       = tls_private_key.github_key.public_key_openssh
+# # }
+
+# # output "github_ssh_public_key_file" {
+# #   description = "Path to the GitHub public key file on your machine"
+# #   value       = abspath("${path.module}/github-key.pub")
+# # }

@@ -55,10 +55,7 @@ module "bastion_host" {
   iam_instance_profile = aws_iam_instance_profile.bastion.name
 
   # On first boot: clone scripts from GitHub, then run install-tools.sh
-  user_data = templatefile("${path.module}/scripts/user_data.sh.tpl", {
-    github_private_key = tls_private_key.github_key.private_key_openssh
-    github_public_key  = chomp(tls_private_key.github_key.public_key_openssh)
-  })
+  user_data = file("${path.module}/scripts/user_data.sh.tpl")
 
   user_data_replace_on_change = true
   # Restart bastion anytime (PowerShell — quotes required):

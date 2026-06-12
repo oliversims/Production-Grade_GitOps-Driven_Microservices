@@ -7,6 +7,8 @@ set -e
 # Usage:
 #   /opt/bastion/apply-gateway-manifests.sh
 
+GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git"
+
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"
 MANIFESTS_DIR="$REPO_DIR/gateway-api-manifests"
 
@@ -21,7 +23,7 @@ if [ -d "$REPO_DIR" ]; then
   cd "$REPO_DIR"
   git pull
 else
-  git clone --filter=blob:none --sparse -b main git@github.com:oliversims/Production-Grade_GitOps-Driven_Microservices.git
+  git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL"
   cd "$REPO_DIR"
   git sparse-checkout set gateway-api-manifests
 fi

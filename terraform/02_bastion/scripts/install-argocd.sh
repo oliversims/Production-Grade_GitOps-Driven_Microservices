@@ -14,6 +14,7 @@ set -e
 # Example: $VALUES_FILE expands to → /home/ubuntu/Production-Grade_GitOps-
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"
 ARGOCD_DIR="$REPO_DIR/argocd"
+GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git"
 VALUES_FILE="$ARGOCD_DIR/argocd-values-9.4.0.yaml"
 TARGET_GROUP_FILE="$ARGOCD_DIR/target-grp-config.yaml"
 
@@ -31,7 +32,7 @@ elif [ -d "$REPO_DIR" ]; then
   git sparse-checkout add argocd
   git pull
 else
-  git clone --filter=blob:none --sparse -b main git@github.com:oliversims/Production-Grade_GitOps-Driven_Microservices.git
+  git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL"
   cd "$REPO_DIR"
   git sparse-checkout set argocd
 fi

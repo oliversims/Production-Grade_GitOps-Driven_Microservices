@@ -11,6 +11,7 @@ set -e
 
 REGION="us-east-1"
 CLUSTER_NAME="terraform-cluster"
+GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git"
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"
 VALUES_FILE="$REPO_DIR/external-dns/external-dns-values-1.20.0.yaml"
 
@@ -28,7 +29,7 @@ elif [ -d "$REPO_DIR" ]; then
   git sparse-checkout add external-dns
   git pull
 else
-  git clone --filter=blob:none --sparse -b main git@github.com:oliversims/Production-Grade_GitOps-Driven_Microservices.git
+  git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL"
   cd "$REPO_DIR"
   git sparse-checkout set external-dns
 fi

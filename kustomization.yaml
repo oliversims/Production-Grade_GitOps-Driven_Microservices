@@ -1,14 +1,32 @@
+# -------------------------------------------------------
+# KUSTOMIZATION: Define everything ArgoCD should deploy
+# -------------------------------------------------------
+# This is the "table of contents" for the entire boutique application.
+# ArgoCD reads this file first and uses it to know WHAT to deploy.
+# It combines two things:
+# 1. Raw Kubernetes YAML files (HTTPRoute and TargetGroup)
+# 2. A Helm chart (the actual microservices)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# -------------------------------------------------------
+# RESOURCES: Raw Kubernetes YAML files to apply directly
+# -------------------------------------------------------
 resources:
   - microservices-extra-kube-manifests/HTTProute.yaml
-  - microservices-extra-kube-manifests/target-grp.yaml
+  # ↑ Routes app.oliver14.com traffic to the frontend service
 
+  - microservices-extra-kube-manifests/target-grp.yaml
+  # ↑ Tells AWS Load Balancer to route directly to pod IPs
+
+# -------------------------------------------------------
+# HELM CHARTS: Deploy all microservices via a Helm chart
+# -------------------------------------------------------
 helmCharts:
-  - name: onlineboutique
-    repo: oci://ghcr.io/oliversims
-    version: 0.10.4
-    releaseName: boutique-app
-    namespace: boutique-app
+  - name: onlineboutique            # The Helm chart to install
+    repo: oci://ghcr.io/oliversims  # Pull the chart from GHCR container registry
+    version: 0.10.4                 # Pinned version — prevents unexpected updates
+    releaseName: boutique-app       # Name Helm uses to track this installation
+    namespace: boutique-app         # Deploy everything into this namespace
     valuesFile: helm-chart/values.yaml
+    # ↑ Custom values file — CI pipeline updates this with new image tags on every build

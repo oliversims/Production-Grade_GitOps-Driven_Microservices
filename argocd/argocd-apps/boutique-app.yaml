@@ -21,7 +21,7 @@ spec:
   # -------------------------------------------------------
   source:
     repoURL: https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git
-    # ↑ Public repo — ArgoCD clones over HTTPS with no credentials.
+    # ↑ Public repo — no credentials required.
     # Any change pushed to this repo can trigger a sync.
 
     targetRevision: HEAD  # Always use the latest commit on the default branch.

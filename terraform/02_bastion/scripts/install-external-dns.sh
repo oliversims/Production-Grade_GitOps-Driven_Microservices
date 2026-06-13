@@ -91,6 +91,9 @@ helm upgrade -i external-dns external-dns/external-dns \
   -n external-dns \
   --version 1.20.0
 
+# Restart so the pod picks up Pod Identity credentials (required after association create/recreate).
+kubectl rollout restart deployment/external-dns -n external-dns
+
 # Step 6: Verify the pod is running
 echo "--- Step 6: Verify ---"
 kubectl rollout status deployment/external-dns -n external-dns --timeout=300s

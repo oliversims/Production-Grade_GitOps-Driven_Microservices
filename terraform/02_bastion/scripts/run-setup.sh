@@ -63,21 +63,13 @@ sleep 2
 /opt/bastion/install-argocd.sh
 
 echo ""
-echo "----------------------------------------"
-echo ""
-
-echo "Step 7: Install Argo CD Image Updater"
-echo ""
-sleep 2
-/opt/bastion/install-argocd-image-updater.sh
-
-echo ""
 echo "========================================"
 echo "  Cluster setup finished"
 echo "========================================"
 echo ""
-echo "Next step (deploy the boutique app via GitOps):"
-echo "  /opt/bastion/apply-boutique-app.sh"
+echo "Next steps (run manually):"
+echo "  1. /opt/bastion/install-argocd-image-updater.sh"
+echo "  2. /opt/bastion/apply-boutique-app.sh"
 echo ""
 echo "Before terraform destroy, run:"
 echo "  /opt/bastion/delete-kubernetes-workloads.sh"

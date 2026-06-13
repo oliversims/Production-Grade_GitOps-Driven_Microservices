@@ -63,6 +63,15 @@ sleep 2
 /opt/bastion/install-argocd.sh
 
 echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Step 7: Install Argo CD Image Updater"
+echo ""
+sleep 2
+/opt/bastion/install-argocd-image-updater.sh
+
+echo ""
 echo "========================================"
 echo "  Cluster setup finished"
 echo "========================================"

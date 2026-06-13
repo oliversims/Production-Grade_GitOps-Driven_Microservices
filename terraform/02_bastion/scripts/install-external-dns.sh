@@ -21,28 +21,20 @@ echo "=== External DNS install ==="
 echo "--- Step 1: Get Helm values file ---"
 cd "$HOME"
 
-if [ -f "$VALUES_FILE" ]; then
-  echo "Values file already exists."
-elif [ -d "$REPO_DIR" ]; then
-  echo "Adding external-dns folder to existing repo..."
-  cd "$REPO_DIR"
-  git sparse-checkout add external-dns
-  git pull
-else
-  git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL"
-  cd "$REPO_DIR"
-  git sparse-checkout set external-dns
-fi
+# Clone if missing; ignore error if repo already exists
+git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL" 2>/dev/null || true
+cd "$REPO_DIR"
+
+# Add external-dns folder if sparse checkout already exists; otherwise init it
+git sparse-checkout add external-dns 2>/dev/null || git sparse-checkout set external-dns
+git pull
 
 # Step 2: Create IAM policy for Route53 (skip if it already exists)
 echo "--- Step 2: Create IAM policy ---"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 POLICY_ARN="arn:aws:iam::${ACCOUNT_ID}:policy/AllowExternalDNSUpdates"
 
-if aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
-  echo "IAM policy already exists, using $POLICY_ARN"
-else
-  cat > /tmp/external-dns-policy.json <<EOF
+cat > /tmp/external-dns-policy.json <<'EOF'
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -63,10 +55,11 @@ else
   ]
 }
 EOF
-  aws iam create-policy \
-    --policy-name AllowExternalDNSUpdates \
-    --policy-document file:///tmp/external-dns-policy.json
-fi
+
+aws iam create-policy \
+  --policy-name AllowExternalDNSUpdates \
+  --policy-document file:///tmp/external-dns-policy.json \
+  2>/dev/null || echo "IAM policy already exists, using $POLICY_ARN"
 
 # Step 3: Create namespace for External DNS
 echo "--- Step 3: Create namespace ---"

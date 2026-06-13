@@ -18,15 +18,13 @@ echo "=== Gateway manifests setup started ==="
 echo "--- Step 1: Clone gateway-api-manifests ---"
 cd "$HOME"
 
-if [ -d "$REPO_DIR" ]; then
-  echo "Repo already exists — pulling latest..."
-  cd "$REPO_DIR"
-  git pull
-else
-  git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL"
-  cd "$REPO_DIR"
-  git sparse-checkout set gateway-api-manifests
-fi
+# Clone if missing; ignore error if repo already exists
+git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL" 2>/dev/null || true
+cd "$REPO_DIR"
+
+# Add gateway-api-manifests folder if sparse checkout already exists; otherwise init it
+git sparse-checkout add gateway-api-manifests 2>/dev/null || git sparse-checkout set gateway-api-manifests
+git pull
 
 # Step 2: Apply all manifest files
 echo "--- Step 2: Apply manifests ---"

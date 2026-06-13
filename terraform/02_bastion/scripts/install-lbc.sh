@@ -28,18 +28,16 @@ POLICY_ARN="arn:aws:iam::${ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy
 echo "Account ID: $ACCOUNT_ID"
 echo "VPC ID: $VPC_ID"
 
-# Step 3: Create the IAM policy (only if it does not exist yet)
+# Step 3: Create the IAM policy (skip if it already exists)
 # This policy stays in your AWS account even after you destroy the cluster.
 echo "--- Step 3: Create IAM policy ---"
-if aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
-  echo "IAM policy already exists, using $POLICY_ARN"
-else
-  curl -fsSL -o /tmp/iam_policy.json \
-    https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.14.1/docs/install/iam_policy.json
-  aws iam create-policy \
-    --policy-name AWSLoadBalancerControllerIAMPolicy \
-    --policy-document file:///tmp/iam_policy.json
-fi
+curl -fsSL -o /tmp/iam_policy.json \
+  https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.14.1/docs/install/iam_policy.json
+
+aws iam create-policy \
+  --policy-name AWSLoadBalancerControllerIAMPolicy \
+  --policy-document file:///tmp/iam_policy.json \
+  2>/dev/null || echo "IAM policy already exists, using $POLICY_ARN"
 
 # Step 4: Create the Kubernetes service account with an IAM role (IRSA)
 echo "--- Step 4: Create service account with IAM role ---"

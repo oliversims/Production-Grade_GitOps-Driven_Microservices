@@ -19,20 +19,13 @@ echo "=== Deploy boutique app via ArgoCD ==="
 echo "--- Step 1: Get Application manifest from GitHub ---"
 cd "$HOME"
 
-if [ -f "$APP_FILE" ]; then
-  echo "Application manifest already exists — pulling latest..."
-  cd "$REPO_DIR"
-  git pull
-elif [ -d "$REPO_DIR" ]; then
-  echo "Adding argocd folder to existing repo..."
-  cd "$REPO_DIR"
-  git sparse-checkout add argocd
-  git pull
-else
-  git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL"
-  cd "$REPO_DIR"
-  git sparse-checkout set argocd
-fi
+# Clone if missing; ignore error if repo already exists
+git clone --filter=blob:none --sparse -b main "$GITHUB_REPO_URL" 2>/dev/null || true
+cd "$REPO_DIR"
+
+# Add argocd folder if sparse checkout already exists; otherwise init it
+git sparse-checkout add argocd 2>/dev/null || git sparse-checkout set argocd
+git pull
 
 # Step 2: Connect kubectl to EKS
 echo "--- Step 2: Configure kubeconfig ---"

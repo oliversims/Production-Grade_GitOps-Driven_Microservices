@@ -1,14 +1,40 @@
+# -------------------------------------------------------
+# TARGET GROUP CONFIGURATION: Tell AWS how to route traffic to Kibana
+# -------------------------------------------------------
+# This is an AWS-specific custom resource that configures
+# how the AWS Load Balancer routes incoming traffic to
+# the Kibana pods running inside the cluster.
+#
+# The HTTPRoute (kibana-route) tells the Gateway WHICH service
+# to send traffic to. This TargetGroupConfiguration tells AWS
+# HOW to register those pods as targets in the Load Balancer.
+#
+# Think of it as: "Instructions for the AWS Load Balancer
+# on HOW to forward traffic to Kibana."
 apiVersion: gateway.k8s.aws/v1beta1
 kind: TargetGroupConfiguration
 metadata:
-  name: kibana-tg-config
-  namespace: logging
+  name: kibana-tg-config  # Name of this configuration
+  namespace: logging       # Must be in the logging namespace because
+                          # that is where the Kibana service lives
+
 spec:
+
+  # -------------------------------------------------------
+  # TARGET REFERENCE: Which service to send traffic to
+  # -------------------------------------------------------
   targetReference:
-    name: eck-kibana-kb-http 
+    name: eck-kibana-kb-http  # The Kubernetes Service in front of Kibana pods.
+                              # Must match the backendRefs name in HTTProute-kibana.yaml.
+                              # Created by the ECK (Elastic Cloud on Kubernetes) operator.
+
+  # -------------------------------------------------------
+  # DEFAULT CONFIGURATION: How to register targets in AWS
+  # -------------------------------------------------------
   defaultConfiguration:
-    targetType: ip
-    protocol: HTTPS
+    targetType: ip  # Route traffic DIRECTLY to pod IP addresses (recommended for EKS).
+    protocol: HTTPS  # Kibana serves HTTPS on its service port — the target group
+                     # must use HTTPS (unlike Grafana/Prometheus which use HTTP).
     healthCheckConfig:
-      healthCheckProtocol: HTTPS
-      healthCheckPath: /api/status
+      healthCheckProtocol: HTTPS       # Health checks must also use HTTPS for Kibana
+      healthCheckPath: /api/status     # Kibana exposes a status endpoint for load balancer health checks

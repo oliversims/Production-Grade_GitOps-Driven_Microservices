@@ -43,12 +43,23 @@ sleep 2
 /opt/bastion/install-kube-prometheus-stack.sh
 
 echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Step 4: Expose Grafana and Prometheus"
+echo ""
+sleep 2
+/opt/bastion/expose-grafana-prometheus.sh
+
+echo ""
 echo "========================================"
 echo "  Post-setup finished"
 echo "========================================"
 echo ""
 echo "Boutique app:  https://app.oliver14.com"
 echo "Argo CD:       https://argocd.oliver14.com"
+echo "Grafana:       https://grafana.oliver14.com"
+echo "Prometheus:    https://prometheus.oliver14.com"
 echo "Slack alerts:  #alertmanager"
 echo ""
 echo "Before terraform destroy, run:"

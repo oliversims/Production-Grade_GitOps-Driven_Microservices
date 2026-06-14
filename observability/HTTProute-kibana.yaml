@@ -1,23 +1,54 @@
+# -------------------------------------------------------
+# HTTPROUTE: Route incoming traffic to the Kibana dashboard
+# -------------------------------------------------------
+# Same pattern as the Grafana and Prometheus HTTPRoutes, but
+# this one exposes Kibana — the log search and visualization UI
+# for the Elastic Stack (Elasticsearch + Kibana).
+# Think of it as: "When someone visits kibana.oliver14.com,
+# send them to the Kibana service."
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: kibana-route
-  namespace: logging
+  name: kibana-route   # Name of this routing rule
+  namespace: logging   # Lives in the "logging" namespace where
+                       # Elasticsearch and Kibana are installed
+                       # (separate from the "monitoring" namespace)
+
 spec:
+
+  # -------------------------------------------------------
+  # HOSTNAMES: Which domain triggers this route
+  # -------------------------------------------------------
   hostnames:
-    - "kibana.oliver14.com"
+    - "kibana.oliver14.com"  # Only handle traffic for this subdomain.
+                             # Monitoring uses grafana.oliver14.com and
+                             # prometheus.oliver14.com — this is for logs only.
+
+  # -------------------------------------------------------
+  # PARENT REFS: Which Gateway (Load Balancer) to attach to
+  # -------------------------------------------------------
+  # Reuses the SAME Gateway (AWS ALB) as the boutique app and monitoring tools.
+  # One Load Balancer handles multiple subdomains — it routes
+  # each one to the correct service based on the hostname.
   parentRefs:
   - group: gateway.networking.k8s.io
-    namespace: default
+    namespace: default      # Gateway lives in the "default" namespace
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: http
+    name: app-alb-gateway   # The SAME shared AWS ALB used by the boutique app
+    sectionName: http        # Attach to the HTTP listener (port 80)
+
   - group: gateway.networking.k8s.io
     namespace: default
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: https
+    name: app-alb-gateway   # Same Gateway
+    sectionName: https       # Also attach to the HTTPS listener (port 443)
+
+  # -------------------------------------------------------
+  # RULES: Where to send the traffic
+  # -------------------------------------------------------
   rules:
   - backendRefs:
-    - name: eck-kibana-kb-http
-      port: 5601
+    - name: eck-kibana-kb-http  # The Kubernetes Service name for Kibana.
+                                 # Created by the Elastic Cloud on Kubernetes (ECK)
+                                 # operator when you install the eck-kibana Helm chart.
+      port: 5601                 # Kibana UI listens on port 5601

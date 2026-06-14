@@ -1,23 +1,54 @@
+# -------------------------------------------------------
+# HTTPROUTE: Route incoming traffic to the Prometheus UI
+# -------------------------------------------------------
+# Same pattern as the Grafana HTTPRoute, but this one exposes
+# Prometheus — the metrics database that collects and stores
+# all monitoring data from your cluster.
+# Think of it as: "When someone visits prometheus.oliver14.com,
+# send them to the Prometheus service."
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: prometheus-route
-  namespace: monitoring
+  name: prometheus-route  # Name of this routing rule
+  namespace: monitoring  # Lives in the "monitoring" namespace where
+                          # Prometheus and Grafana are installed
+
 spec:
+
+  # -------------------------------------------------------
+  # HOSTNAMES: Which domain triggers this route
+  # -------------------------------------------------------
   hostnames:
-    - "prometheus.oliver14.com"
+    - "prometheus.oliver14.com"  # Only handle traffic for this subdomain.
+                                 # Grafana uses "grafana.oliver14.com" —
+                                 # this is a SEPARATE subdomain for the Prometheus UI.
+
+  # -------------------------------------------------------
+  # PARENT REFS: Which Gateway (Load Balancer) to attach to
+  # -------------------------------------------------------
+  # Reuses the SAME Gateway (AWS ALB) as the boutique app and Grafana.
+  # One Load Balancer handles multiple subdomains — it routes
+  # each one to the correct service based on the hostname.
   parentRefs:
   - group: gateway.networking.k8s.io
-    namespace: default
+    namespace: default      # Gateway lives in the "default" namespace
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: http
+    name: app-alb-gateway   # The SAME shared AWS ALB used by the boutique app
+    sectionName: http        # Attach to the HTTP listener (port 80)
+
   - group: gateway.networking.k8s.io
     namespace: default
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: https
+    name: app-alb-gateway   # Same Gateway
+    sectionName: https       # Also attach to the HTTPS listener (port 443)
+
+  # -------------------------------------------------------
+  # RULES: Where to send the traffic
+  # -------------------------------------------------------
   rules:
   - backendRefs:
-    - name: kube-prometheus-stack-prometheus
-      port: 9090
+    - name: kube-prometheus-stack-prometheus  # The Kubernetes Service name for Prometheus.
+                                              # Created automatically by the
+                                              # "kube-prometheus-stack" Helm chart.
+      port: 9090                              # Prometheus UI listens on port 9090
+                                              # (Grafana uses port 80 — different service, different port)

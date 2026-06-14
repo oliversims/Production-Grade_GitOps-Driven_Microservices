@@ -1,23 +1,55 @@
+# -------------------------------------------------------
+# HTTPROUTE: Route incoming traffic to the Grafana dashboard
+# -------------------------------------------------------
+# This is the same pattern as the boutique app HTTPRoute,
+# but this one exposes Grafana — the monitoring dashboard
+# that shows metrics, logs, and alerts for your cluster.
+# Think of it as: "When someone visits grafana.oliver14.com,
+# send them to the Grafana service."
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: grafana-route
-  namespace: monitoring
+  name: grafana-route   # Name of this routing rule
+  namespace: monitoring # Lives in the "monitoring" namespace where
+                        # Grafana and Prometheus are installed
+
 spec:
+
+  # -------------------------------------------------------
+  # HOSTNAMES: Which domain triggers this route
+  # -------------------------------------------------------
   hostnames:
-    - "grafana.oliver14.com"
+    - "grafana.oliver14.com"  # Only handle traffic for this specific subdomain.
+                               # The boutique app uses "app.oliver14.com" —
+                               # this is a SEPARATE subdomain for monitoring only.
+
+  # -------------------------------------------------------
+  # PARENT REFS: Which Gateway (Load Balancer) to attach to
+  # -------------------------------------------------------
+  # Reuses the SAME Gateway (AWS ALB) as the boutique app.
+  # One Load Balancer handles multiple subdomains — it routes
+  # each one to the correct service based on the hostname.
   parentRefs:
   - group: gateway.networking.k8s.io
-    namespace: default
+    namespace: default      # Gateway lives in the "default" namespace
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: http
+    name: app-alb-gateway   # The SAME shared AWS ALB used by the boutique app
+    sectionName: http        # Attach to the HTTP listener (port 80)
+
   - group: gateway.networking.k8s.io
     namespace: default
     kind: Gateway
-    name: app-alb-gateway
-    sectionName: https
+    name: app-alb-gateway   # Same Gateway
+    sectionName: https       # Also attach to the HTTPS listener (port 443)
+
+  # -------------------------------------------------------
+  # RULES: Where to send the traffic
+  # -------------------------------------------------------
   rules:
   - backendRefs:
-    - name: kube-prometheus-stack-grafana
-      port: 80
+    - name: kube-prometheus-stack-grafana  # The Kubernetes Service name for Grafana.
+                                           # This is the name automatically created when
+                                           # you install the "kube-prometheus-stack" Helm chart.
+                                           # The long name is because Helm prefixes the
+                                           # release name to all resources it creates.
+      port: 80                             # Forward to port 80 on the Grafana service

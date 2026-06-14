@@ -1,10 +1,36 @@
+# -------------------------------------------------------
+# TARGET GROUP CONFIGURATION: Tell AWS how to route traffic to Grafana
+# -------------------------------------------------------
+# This is an AWS-specific custom resource that configures
+# how the AWS Load Balancer routes incoming traffic to
+# the Grafana pods running inside the cluster.
+#
+# The HTTPRoute (grafana-route) tells the Gateway WHICH service
+# to send traffic to. This TargetGroupConfiguration tells AWS
+# HOW to register those pods as targets in the Load Balancer.
+#
+# Think of it as: "Instructions for the AWS Load Balancer
+# on HOW to forward traffic to Grafana."
 apiVersion: gateway.k8s.aws/v1beta1
 kind: TargetGroupConfiguration
 metadata:
-  name: grafana-tg-config
-  namespace: monitoring
+  name: grafana-tg-config  # Name of this configuration
+  namespace: monitoring    # Must be in the monitoring namespace because
+                            # that is where the Grafana service lives
+
 spec:
+
+  # -------------------------------------------------------
+  # TARGET REFERENCE: Which service to send traffic to
+  # -------------------------------------------------------
   targetReference:
-    name: kube-prometheus-stack-grafana 
+    name: kube-prometheus-stack-grafana  # The Kubernetes Service in front of Grafana pods.
+                                         # Must match the backendRefs name in HTTProute-grafana.yaml.
+                                         # Created by the kube-prometheus-stack Helm chart.
+
+  # -------------------------------------------------------
+  # DEFAULT CONFIGURATION: How to register targets in AWS
+  # -------------------------------------------------------
   defaultConfiguration:
-    targetType: ip
+    targetType: ip  # Route traffic DIRECTLY to pod IP addresses (recommended for EKS).
+                    # Same setting as Argo CD and the boutique app target groups.

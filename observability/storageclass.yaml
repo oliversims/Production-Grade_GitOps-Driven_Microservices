@@ -1,9 +1,25 @@
+# -------------------------------------------------------
+# STORAGE CLASS: Dynamic EBS volumes for observability workloads
+# -------------------------------------------------------
+# A StorageClass tells Kubernetes HOW to create persistent disks
+# when a pod needs storage (e.g. Elasticsearch data, Prometheus metrics).
+#
+# Without this, pods that need a PersistentVolumeClaim (PVC) would
+# stay Pending — nothing would provision the underlying AWS EBS volume.
+#
+# Think of it as: "When an observability pod asks for storage,
+# create an AWS EBS volume automatically using these settings."
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ebs-aws
+  name: ebs-aws  # Name referenced in PersistentVolumeClaims (e.g. in ECK / Elasticsearch Helm values)
   annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: ebs.csi.aws.com
-reclaimPolicy: Delete
-volumeBindingMode: WaitForFirstConsumer
+    storageclass.kubernetes.io/is-default-class: "true"  # Any PVC without an explicit storageClassName
+                                                        # will use this class automatically
+
+provisioner: ebs.csi.aws.com       # AWS EBS CSI driver — creates EBS volumes in your VPC
+reclaimPolicy: Delete              # When the PVC is deleted, the EBS volume is deleted too
+                                   # (avoids orphaned disks and extra cost)
+volumeBindingMode: WaitForFirstConsumer  # Don't create the EBS volume until a pod is scheduled
+                                         # that actually needs it — ensures the volume is created
+                                         # in the same Availability Zone as the pod

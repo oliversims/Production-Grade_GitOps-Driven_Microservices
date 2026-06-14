@@ -1,0 +1,55 @@
+Update bastion scripts after pushing to GitHub
+==============================================
+
+1. Push your changes to GitHub (from your laptop):
+
+   git add .
+   git commit -m "your message"
+   git push origin main
+
+
+2. SSH into the bastion:
+
+   ssh -i terraform/02_bastion/bastion-key.pem ubuntu@<BASTION_PUBLIC_IP>
+
+
+3. Pull latest scripts and copy them to /opt/bastion (run on bastion):
+
+   cd /tmp/bastion-repo 2>/dev/null || git clone --filter=blob:none --sparse -b main \
+     https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git /tmp/bastion-repo
+
+   cd /tmp/bastion-repo
+   git sparse-checkout set terraform/02_bastion/scripts
+   git pull
+
+   sudo cp terraform/02_bastion/scripts/*.sh /opt/bastion/
+   sudo chmod +x /opt/bastion/*.sh
+
+
+4. Verify (run on bastion):
+
+   ls -la /opt/bastion/
+
+
+Notes
+-----
+- Do NOT run "git pull" inside /opt/bastion — that folder is not a git repo.
+- Pull in /tmp/bastion-repo, then copy .sh files to /opt/bastion/.
+- Updating scripts does not change the cluster; re-run the script you need if required.
+
+
+Slack webhook (automatic on new bastion)
+----------------------------------------
+Keep your URL in this file on your laptop (NOT pushed to GitHub):
+
+  terraform/02_bastion/scripts/Webhook_URL.txt
+
+When you create or replace the bastion:
+
+  terraform apply    (in terraform/02_bastion)
+
+Terraform reads Webhook_URL.txt and first boot copies it to ~/Webhook_URL.txt on the server.
+Then on the bastion:
+
+  /opt/bastion/run-setup.sh
+  /opt/bastion/run-post-setup.sh

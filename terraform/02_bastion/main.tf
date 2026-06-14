@@ -54,8 +54,10 @@ module "bastion_host" {
   # IAM role attached here — AWS CLI works without aws configure
   iam_instance_profile = aws_iam_instance_profile.bastion.name
 
-  # On first boot: clone scripts from GitHub, then run install-tools.sh
-  user_data = file("${path.module}/scripts/user_data.sh.tpl")
+  # On first boot: clone scripts from GitHub, copy Slack webhook from scripts/Webhook_URL.txt
+  user_data = templatefile("${path.module}/scripts/user_data.sh.tpl", {
+    slack_webhook_url = chomp(file("${path.module}/scripts/Webhook_URL.txt"))
+  })
 
   user_data_replace_on_change = true
   # Restart bastion anytime (PowerShell — quotes required):

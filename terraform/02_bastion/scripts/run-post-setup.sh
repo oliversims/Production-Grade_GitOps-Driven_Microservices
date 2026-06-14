@@ -6,8 +6,12 @@ set -e
 # Usage:
 #   /opt/bastion/run-post-setup.sh
 #
-# For Slack alerts, pass the webhook URL:
-#   SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...' /opt/bastion/run-post-setup.sh
+# Slack webhook: copied to ~/Webhook_URL.txt on bastion first boot.
+# Source file: terraform/02_bastion/scripts/Webhook_URL.txt
+
+# Load Slack webhook for step 3 (written by user_data on first boot from Webhook_URL.txt)
+SLACK_WEBHOOK_URL=$(cat "$HOME/Webhook_URL.txt" 2>/dev/null | tr -d ' \r\n')
+export SLACK_WEBHOOK_URL
 
 echo ""
 echo "========================================"

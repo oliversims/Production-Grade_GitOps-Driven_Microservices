@@ -25,6 +25,14 @@ sudo -u ubuntu git sparse-checkout set terraform/02_bastion/scripts
 cp terraform/02_bastion/scripts/*.sh /opt/bastion/
 chmod +x /opt/bastion/*.sh
 
+# Copy Slack webhook for run-post-setup.sh
+# Source: terraform/02_bastion/scripts/Webhook_URL.txt (on your laptop, via terraform apply)
+cat > /home/ubuntu/Webhook_URL.txt <<'WEBHOOK_EOF'
+${slack_webhook_url}
+WEBHOOK_EOF
+chmod 600 /home/ubuntu/Webhook_URL.txt
+chown ubuntu:ubuntu /home/ubuntu/Webhook_URL.txt
+
 echo "=== Installing tools ==="
 /opt/bastion/install-tools.sh
 

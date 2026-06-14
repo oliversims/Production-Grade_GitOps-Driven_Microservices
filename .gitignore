@@ -31,3 +31,6 @@ vendor/
 
 # Local deploy/SSH keys (public key kept off repo)
 github-key.pub
+
+# Slack webhook — terraform/02_bastion/scripts/Webhook_URL.txt (not committed)
+**/Webhook_URL.txt

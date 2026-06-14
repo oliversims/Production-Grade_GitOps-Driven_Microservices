@@ -90,6 +90,7 @@ helm repo add eks https://aws.github.io/eks-charts
 helm repo update eks
 
 # Step 9: Install the controller with Helm
+# ALB Gateway API only — NLBGatewayAPI requires experimental TCPRoute/TLSRoute/UDPRoute CRDs
 echo "--- Step 9: Install controller ---"
 helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
@@ -98,7 +99,6 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set vpcId="$VPC_ID" \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
-  --set controllerConfig.featureGates.NLBGatewayAPI=true \
   --set controllerConfig.featureGates.ALBGatewayAPI=true \
   --version 3.0.0
 

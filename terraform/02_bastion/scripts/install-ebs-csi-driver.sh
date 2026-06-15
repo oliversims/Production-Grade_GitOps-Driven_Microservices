@@ -59,11 +59,15 @@ eksctl create addon \
   --version latest \
   --service-account-role-arn="$ROLE_ARN" \
   --region "$REGION" \
-  --force
+  --force \
+  --wait
 
-# Step 6: Wait until the controller deployment is ready
-echo "--- Step 6: Wait for controller ---"
-kubectl rollout status deployment/ebs-csi-controller -n "$SA_NAMESPACE" --timeout=300s
+# Step 6: Wait until EBS CSI pods are ready (addon creates them after status ACTIVE)
+echo "--- Step 6: Wait for EBS CSI pods ---"
+kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/name=aws-ebs-csi-driver \
+  -n "$SA_NAMESPACE" \
+  --timeout=300s
 
 # Step 7: Verify controller and node pods are running
 echo "--- Step 7: Verify ---"

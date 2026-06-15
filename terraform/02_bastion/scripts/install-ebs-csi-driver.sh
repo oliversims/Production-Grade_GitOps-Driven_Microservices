@@ -76,6 +76,6 @@ kubectl get pods -n "$SA_NAMESPACE" -l app.kubernetes.io/name=aws-ebs-csi-driver
 echo ""
 echo "=== AWS EBS CSI driver install finished ==="
 echo ""
-echo "Next: install the ECK logging stack"
-echo "  /opt/bastion/install-eck-logging.sh"
+echo "Next: install the ECK operator"
+echo "  /opt/bastion/install-eck-operator.sh"
 echo ""

@@ -21,12 +21,21 @@ echo ""
 echo "----------------------------------------"
 echo ""
 
+echo "Step 2: Install ECK operator"
+echo ""
+sleep 2
+/opt/bastion/install-eck-operator.sh
+
+echo ""
+echo "----------------------------------------"
+echo ""
+
 echo "========================================"
-echo "  Logging setup finished (step 1 of 3)"
+echo "  Logging setup finished (step 2 of 4)"
 echo "========================================"
 echo ""
 echo "Next steps (when scripts are added):"
-echo "  /opt/bastion/install-eck-logging.sh"
+echo "  /opt/bastion/install-eck-elasticsearch.sh"
 echo "  /opt/bastion/expose-kibana.sh"
 echo ""
 echo "Before terraform destroy, run:"

@@ -1503,6 +1503,9 @@ grafana:
   ##
   service:
     portName: http-web
+    # Numeric targetPort avoids LBC mis-resolving the pod's named port "grafana"
+    # when building ALB target groups for the Grafana HTTPRoute.
+    targetPort: 3000
     ipFamilies: []
     ipFamilyPolicy: ""
 

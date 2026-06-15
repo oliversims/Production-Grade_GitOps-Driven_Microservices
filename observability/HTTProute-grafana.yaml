@@ -52,4 +52,4 @@ spec:
                                            # you install the "kube-prometheus-stack" Helm chart.
                                            # The long name is because Helm prefixes the
                                            # release name to all resources it creates.
-      port: 80                             # Forward to port 80 on the Grafana service
+      port: http-web                       # Service port name (port 80) — matches grafana.service.portName

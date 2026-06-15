@@ -35,6 +35,7 @@ sudo -u ubuntu git sparse-checkout set terraform/02_bastion/scripts
 # Step 4: Copy .sh files to /opt/bastion (where you run them from)
 echo "--- Step 4: Copy scripts to /opt/bastion ---"
 cp terraform/02_bastion/scripts/*.sh /opt/bastion/
+cp terraform/02_bastion/scripts/aws-load-balancer-controller-iam-policy.json /opt/bastion/
 chmod +x /opt/bastion/*.sh
 
 # Step 5: Write Slack webhook for run-post-setup.sh (step 3 of post-setup)

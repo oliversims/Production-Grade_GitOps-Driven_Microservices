@@ -4,7 +4,7 @@ set -e
 # Install Argo CD Image Updater and apply the boutique ImageUpdater CR.
 # Public GitHub repo + public GHCR packages — no credentials required.
 #
-# Run AFTER install-argocd.sh (run-setup.sh step 7).
+# Run AFTER install-argocd.sh (run-app-monitoring-setup.sh step 1).
 # Run BEFORE apply-boutique-app.sh.
 #
 # Usage:

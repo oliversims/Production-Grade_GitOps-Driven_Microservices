@@ -38,9 +38,9 @@ cp terraform/02_bastion/scripts/*.sh /opt/bastion/
 cp terraform/02_bastion/scripts/aws-load-balancer-controller-iam-policy.json /opt/bastion/
 chmod +x /opt/bastion/*.sh
 
-# Step 5: Write Slack webhook for run-post-setup.sh (step 3 of post-setup)
+# Step 5: Write Slack webhook for run-app-monitoring-setup.sh (step 3)
 # Terraform reads Webhook_URL.txt on your laptop and injects ${slack_webhook_url} here.
-# run-post-setup.sh reads /home/ubuntu/Webhook_URL.txt and exports SLACK_WEBHOOK_URL.
+# run-app-monitoring-setup.sh reads /home/ubuntu/Webhook_URL.txt and exports SLACK_WEBHOOK_URL.
 echo "--- Step 5: Write Slack webhook file ---"
 cat > /home/ubuntu/Webhook_URL.txt <<'WEBHOOK_EOF'
 ${slack_webhook_url}
@@ -55,5 +55,6 @@ echo "--- Step 6: Install tools ---"
 echo "=== Bastion setup finished ==="
 echo "Next steps:"
 echo "  1. Create the EKS cluster (03_eks apply)"
-echo "  2. Run: /opt/bastion/run-setup.sh"
-echo "  3. Run: /opt/bastion/run-post-setup.sh"
+echo "  2. Run: /opt/bastion/run-platform-setup.sh"
+echo "  3. Run: /opt/bastion/run-app-monitoring-setup.sh"
+echo "  4. Run: /opt/bastion/run-logging-setup.sh"

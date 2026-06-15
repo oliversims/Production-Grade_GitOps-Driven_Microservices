@@ -1,14 +1,15 @@
 #!/bin/bash
 set -e
 
-# Run all cluster setup scripts in order (after 03_eks apply).
+# Run platform setup scripts in order (after 03_eks apply).
+# Installs: LBC, Gateway API, External DNS, Argo CD.
 #
 # Usage:
-#   /opt/bastion/run-setup.sh
+#   /opt/bastion/run-platform-setup.sh
 
 echo ""
 echo "========================================"
-echo "  Cluster setup started"
+echo "  Platform setup started"
 echo "========================================"
 echo ""
 
@@ -64,14 +65,11 @@ sleep 2
 
 echo ""
 echo "========================================"
-echo "  Cluster setup finished"
+echo "  Platform setup finished"
 echo "========================================"
 echo ""
-echo "Next steps (run manually):"
-echo "  /opt/bastion/run-post-setup.sh"
-echo ""
-echo "  For Slack alerts:"
-echo "  SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...' /opt/bastion/run-post-setup.sh"
+echo "Next step:"
+echo "  /opt/bastion/run-app-monitoring-setup.sh"
 echo ""
 echo "Before terraform destroy, run:"
 echo "  /opt/bastion/delete-kubernetes-workloads.sh"

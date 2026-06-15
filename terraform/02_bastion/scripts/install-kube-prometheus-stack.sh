@@ -3,7 +3,7 @@ set -e
 
 # Install kube-prometheus-stack (Prometheus, Grafana, Alertmanager).
 #
-# Run AFTER run-setup.sh (cluster + platform must be ready).
+# Run AFTER run-platform-setup.sh (cluster + platform must be ready).
 # Also creates the Slack webhook secret for Alertmanager notifications.
 #
 # Prerequisite: create Incoming Webhook in Slack for #alertmanager channel.

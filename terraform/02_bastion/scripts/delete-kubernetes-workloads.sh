@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Tear down everything installed by run-setup.sh + run-post-setup.sh, in reverse order.
+# Tear down everything installed by run-platform-setup.sh + run-app-monitoring-setup.sh, in reverse order.
 # Run BEFORE: terraform destroy (03_eks → 02_bastion → 01_vpc)
 #
 # Usage: /opt/bastion/delete-kubernetes-workloads.sh

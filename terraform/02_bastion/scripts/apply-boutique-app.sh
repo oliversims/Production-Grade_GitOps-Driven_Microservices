@@ -2,7 +2,7 @@
 set -e
 
 # Deploy the boutique app via ArgoCD.
-# Run AFTER install-argocd.sh / run-setup.sh.
+# Run AFTER install-argocd.sh / run-platform-setup.sh.
 #
 # Requires public GitHub repo + public GHCR packages (no credentials needed).
 #

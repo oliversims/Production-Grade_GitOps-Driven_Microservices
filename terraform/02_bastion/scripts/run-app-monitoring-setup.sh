@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
-# Run post-platform setup scripts in order (after run-setup.sh).
+# Run app and monitoring setup scripts in order (after run-platform-setup.sh).
+# Installs: Image Updater, boutique app, kube-prometheus-stack, Grafana/Prometheus routes.
 #
 # Usage:
-#   /opt/bastion/run-post-setup.sh
+#   /opt/bastion/run-app-monitoring-setup.sh
 #
 # Slack webhook: copied to ~/Webhook_URL.txt on bastion first boot.
 # Source file: terraform/02_bastion/scripts/Webhook_URL.txt
@@ -15,7 +16,7 @@ export SLACK_WEBHOOK_URL
 
 echo ""
 echo "========================================"
-echo "  Post-setup started"
+echo "  App and monitoring setup started"
 echo "========================================"
 echo ""
 
@@ -53,14 +54,16 @@ sleep 2
 
 echo ""
 echo "========================================"
-echo "  Post-setup finished"
+echo "  App and monitoring setup finished"
 echo "========================================"
 echo ""
 echo "Boutique app:  https://app.oliver14.com"
-echo "Argo CD:       https://argocd.oliver14.com"
 echo "Grafana:       https://grafana.oliver14.com"
 echo "Prometheus:    https://prometheus.oliver14.com"
 echo "Slack alerts:  #alertmanager"
+echo ""
+echo "Next step:"
+echo "  /opt/bastion/run-logging-setup.sh"
 echo ""
 echo "Before terraform destroy, run:"
 echo "  /opt/bastion/delete-kubernetes-workloads.sh"

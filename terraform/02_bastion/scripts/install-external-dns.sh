@@ -3,7 +3,7 @@ set -e
 
 # Install External DNS (updates Route53 records for Gateway/Ingress).
 #
-# Run AFTER apply-gateway-manifests.sh (called by run-setup.sh).
+# Run AFTER apply-gateway-manifests.sh (called by run-platform-setup.sh).
 # Uses EKS Pod Identity (eks-pod-identity-agent addon from 03_eks).
 #
 # Usage:

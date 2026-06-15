@@ -3,7 +3,7 @@ set -e
 
 # Install ArgoCD (GitOps controller for the cluster).
 #
-# Run AFTER install-external-dns.sh (called by run-setup.sh).
+# Run AFTER install-external-dns.sh (called by run-platform-setup.sh).
 # External DNS must be running first so argocd.oliver14.com gets a DNS record.
 #
 # Usage:

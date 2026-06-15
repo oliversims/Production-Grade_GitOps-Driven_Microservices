@@ -46,5 +46,6 @@ When you create or replace the bastion:
 Terraform reads Webhook_URL.txt and first boot copies it to ~/Webhook_URL.txt on the server.
 Then on the bastion:
 
-  /opt/bastion/run-setup.sh
-  /opt/bastion/run-post-setup.sh
+  /opt/bastion/run-platform-setup.sh
+  /opt/bastion/run-app-monitoring-setup.sh
+  /opt/bastion/run-logging-setup.sh

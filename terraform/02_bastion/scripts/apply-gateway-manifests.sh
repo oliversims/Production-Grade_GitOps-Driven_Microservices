@@ -2,7 +2,7 @@
 set -e
 
 # Clone gateway-api-manifests from GitHub and apply the manifests.
-# Run AFTER install-gateway-api-crds.sh (called by run-setup.sh).
+# Run AFTER install-gateway-api-crds.sh (called by run-platform-setup.sh).
 #
 # Usage:
 #   /opt/bastion/apply-gateway-manifests.sh

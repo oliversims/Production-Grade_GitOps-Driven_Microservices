@@ -30,12 +30,22 @@ echo ""
 echo "----------------------------------------"
 echo ""
 
+echo "Step 3: Install Elasticsearch"
+echo ""
+sleep 2
+/opt/bastion/install-eck-elasticsearch.sh
+
+echo ""
+echo "----------------------------------------"
+echo ""
+
 echo "========================================"
-echo "  Logging setup finished (step 2 of 4)"
+echo "  Logging setup finished (step 3 of 5)"
 echo "========================================"
 echo ""
 echo "Next steps (when scripts are added):"
-echo "  /opt/bastion/install-eck-elasticsearch.sh"
+echo "  /opt/bastion/install-eck-beats.sh"
+echo "  /opt/bastion/install-eck-kibana.sh"
 echo "  /opt/bastion/expose-kibana.sh"
 echo ""
 echo "Before terraform destroy, run:"

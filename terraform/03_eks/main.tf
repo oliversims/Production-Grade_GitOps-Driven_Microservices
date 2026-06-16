@@ -77,6 +77,12 @@ module "eks" {
       min_size       = 2
       max_size       = 10
       desired_size   = 2
+
+      # Tags required for Cluster Autoscaler to find and manage this node group
+      tags = {
+        "k8s.io/cluster-autoscaler/enabled"             = "true"
+        "k8s.io/cluster-autoscaler/terraform-cluster"   = "owned"
+      }
     }
   }
 

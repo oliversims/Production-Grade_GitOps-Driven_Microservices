@@ -344,10 +344,10 @@ echo "----------------------------------------"
 echo ""
 
 # -------------------------------------------------------
-# Reverse step 3: Gateway API CRDs
+# Reverse step 4: Gateway API CRDs
 # Remove custom resource definitions once all Gateway objects are gone.
 # -------------------------------------------------------
-echo "Reverse step 3: Delete Gateway API CRDs"
+echo "Reverse step 4: Delete Gateway API CRDs"
 echo ""
 
 kubectl delete -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/heads/main/config/crd/gateway/gateway-crds.yaml \
@@ -362,10 +362,10 @@ echo "----------------------------------------"
 echo ""
 
 # -------------------------------------------------------
-# Reverse step 2: AWS Load Balancer Controller
+# Reverse step 3: AWS Load Balancer Controller
 # Uninstalls the controller from install-lbc.sh and revokes its IAM service account.
 # -------------------------------------------------------
-echo "Reverse step 2: Delete AWS Load Balancer Controller"
+echo "Reverse step 3: Delete AWS Load Balancer Controller"
 echo ""
 
 helm uninstall aws-load-balancer-controller -n kube-system 2>/dev/null || true
@@ -385,6 +385,30 @@ kubectl delete -f https://raw.githubusercontent.com/aws/eks-charts/master/stable
 
 echo "NOTE: priorityclass/system-cluster-critical may remain (Kubernetes system resource)."
 echo "Load Balancer Controller removed."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+# -------------------------------------------------------
+# Reverse step 2: Cluster Autoscaler
+# Uninstalls the controller from install-cluster-autoscaler.sh and revokes its IAM service account.
+# -------------------------------------------------------
+echo "Reverse step 2: Delete Cluster Autoscaler"
+echo ""
+
+helm uninstall cluster-autoscaler -n kube-system 2>/dev/null || true
+wait_for_delete "deployment/cluster-autoscaler-aws-cluster-autoscaler" "kube-system" "180s"
+
+echo "Revoking Cluster Autoscaler IAM service account..."
+eksctl delete iamserviceaccount \
+  --cluster="$CLUSTER_NAME" \
+  --namespace=kube-system \
+  --name=cluster-autoscaler \
+  --region="$REGION" 2>/dev/null \
+  && echo "Cluster Autoscaler IAM service account removed." \
+  || echo "WARNING: Cluster Autoscaler IAM service account not found or could not be deleted."
+
+echo "Cluster Autoscaler removed."
 echo ""
 echo "----------------------------------------"
 echo ""

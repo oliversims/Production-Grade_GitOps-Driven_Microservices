@@ -12,7 +12,7 @@ set -euo pipefail
 REGION="us-east-1"
 CLUSTER_NAME="terraform-cluster"
 DNS_DOMAIN="oliver14.com"
-ROUTE53_MANAGED_LABELS="app,argocd,grafana,prometheus"
+ROUTE53_MANAGED_LABELS="app,argocd,grafana,prometheus,kibana"
 GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git"
 
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"

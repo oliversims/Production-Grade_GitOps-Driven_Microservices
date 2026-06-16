@@ -67,7 +67,7 @@ echo "--- Step 6: Wait for EBS CSI pods ---"
 kubectl wait --for=condition=ready pod \
   -l app.kubernetes.io/name=aws-ebs-csi-driver \
   -n "$SA_NAMESPACE" \
-  --timeout=300s
+  --timeout=500s
 
 # Step 7: Verify controller and node pods are running
 echo "--- Step 7: Verify ---"

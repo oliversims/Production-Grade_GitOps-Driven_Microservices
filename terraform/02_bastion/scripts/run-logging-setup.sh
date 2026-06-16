@@ -57,8 +57,17 @@ echo ""
 echo "----------------------------------------"
 echo ""
 
+echo "Step 6: Expose Kibana"
+echo ""
+sleep 2
+/opt/bastion/expose-kibana.sh
+
+echo ""
+echo "----------------------------------------"
+echo ""
+
 echo "========================================"
-echo "  Logging setup finished (step 5 of 5)"
+echo "  Logging setup finished (step 6 of 6)"
 echo "========================================"
 echo ""
 echo "Verification snapshot:"
@@ -66,11 +75,12 @@ kubectl get ns logging
 kubectl get elasticsearch -n logging
 kubectl get beats -n logging
 kubectl get kibana -n logging
+kubectl get httproute -n logging
+kubectl get targetgroupconfiguration -n logging
 kubectl get pvc -n logging
 kubectl get pods -n logging
 echo ""
-echo "Next step (when script is added):"
-echo "  /opt/bastion/expose-kibana.sh"
+echo "Kibana:  https://kibana.oliver14.com"
 echo ""
 echo "Before terraform destroy, run:"
 echo "  /opt/bastion/delete-kubernetes-workloads.sh"

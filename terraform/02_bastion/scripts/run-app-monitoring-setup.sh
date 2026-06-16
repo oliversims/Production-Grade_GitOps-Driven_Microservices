@@ -40,7 +40,7 @@ echo ""
 
 echo "Step 3: Install kube-prometheus-stack"
 echo ""
-sleep 2
+sleep 5
 /opt/bastion/install-kube-prometheus-stack.sh
 
 echo ""

@@ -57,5 +57,5 @@ echo ""
 echo "DNS may take a few minutes to propagate after first apply."
 echo ""
 echo "Grafana admin password:"
-echo "  kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath=\"{.data.admin-password}\" | base64 -d && echo"
+kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d && echo
 echo ""

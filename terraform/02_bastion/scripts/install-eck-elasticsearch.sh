@@ -59,8 +59,9 @@ helm upgrade -i "$RELEASE_NAME" elastic/eck-elasticsearch \
   -f "$VALUES_FILE" \
   -n "$NAMESPACE"
 
-# Step 6: Wait until the Elasticsearch PVC is bound (EBS volume provisioned)
+# Step 6: Wait until the Elasticsearch PVC is created and bound (ECK creates it after Helm install)
 echo "--- Step 6: Wait for PVC bound ---"
+sleep 15
 kubectl wait --for=jsonpath='{.status.phase}'=Bound \
   "pvc/$PVC_NAME" \
   -n "$NAMESPACE" \

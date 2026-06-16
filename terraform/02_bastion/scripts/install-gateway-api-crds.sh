@@ -23,8 +23,11 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 echo "--- Step 3: Install AWS LBC Gateway API CRDs ---"
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/heads/main/config/crd/gateway/gateway-crds.yaml
 
-# Step 4: Show installed CRDs
-echo "--- Step 4: Show result ---"
-kubectl get crd | grep gateway
+# Step 4: Verify key Gateway API CRDs exist
+echo "--- Step 4: Verify ---"
+kubectl get crd gatewayclasses.gateway.networking.k8s.io
+kubectl get crd gateways.gateway.networking.k8s.io
+kubectl get crd httproutes.gateway.networking.k8s.io
+kubectl get crd targetgroupconfigurations.gateway.k8s.aws
 
 echo "=== Done ==="

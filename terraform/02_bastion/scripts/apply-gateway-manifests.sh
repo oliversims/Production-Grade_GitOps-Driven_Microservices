@@ -37,5 +37,7 @@ echo "--- Step 3: Verify manifests ---"
 kubectl get gatewayclass aws-alb-gateway-class
 kubectl get loadbalancerconfiguration app-gw-lbconfig -n default
 kubectl get gateway app-alb-gateway -n default
+kubectl get gateway app-alb-gateway -n default -o jsonpath='{.status.conditions[*].type}'
+echo ""
 
 echo "=== Gateway manifests setup finished ==="

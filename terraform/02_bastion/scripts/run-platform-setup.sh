@@ -77,6 +77,14 @@ echo "========================================"
 echo "  Platform setup finished"
 echo "========================================"
 echo ""
+echo "Verification snapshot:"
+kubectl get ns
+kubectl get deploy -n kube-system aws-load-balancer-controller cluster-autoscaler-aws-cluster-autoscaler
+kubectl get gatewayclass aws-alb-gateway-class
+kubectl get gateway app-alb-gateway -n default
+kubectl get deploy -n external-dns external-dns
+kubectl get deploy -n argocd argo-cd-argocd-server
+echo ""
 echo "Next step:"
 echo "  /opt/bastion/run-app-monitoring-setup.sh"
 echo ""

@@ -48,12 +48,28 @@ echo ""
 echo "----------------------------------------"
 echo ""
 
+echo "Step 5: Install Kibana"
+echo ""
+sleep 2
+/opt/bastion/install-eck-kibana.sh
+
+echo ""
+echo "----------------------------------------"
+echo ""
+
 echo "========================================"
-echo "  Logging setup finished (step 4 of 5)"
+echo "  Logging setup finished (step 5 of 5)"
 echo "========================================"
 echo ""
-echo "Next steps (when scripts are added):"
-echo "  /opt/bastion/install-eck-kibana.sh"
+echo "Verification snapshot:"
+kubectl get ns logging
+kubectl get elasticsearch -n logging
+kubectl get beats -n logging
+kubectl get kibana -n logging
+kubectl get pvc -n logging
+kubectl get pods -n logging
+echo ""
+echo "Next step (when script is added):"
 echo "  /opt/bastion/expose-kibana.sh"
 echo ""
 echo "Before terraform destroy, run:"

@@ -1,14 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-# Tear down everything installed by run-platform-setup.sh + run-app-monitoring-setup.sh, in reverse order.
+# Tear down everything installed by run-logging-setup.sh, run-app-monitoring-setup.sh,
+# and run-platform-setup.sh, in reverse order.
 # Run BEFORE: terraform destroy (03_eks → 02_bastion → 01_vpc)
+#
+# Typical runtime: ~10 minutes (boutique-app namespace finalizers are the slowest step).
 #
 # Usage: /opt/bastion/delete-kubernetes-workloads.sh
 
 REGION="us-east-1"
 CLUSTER_NAME="terraform-cluster"
 DNS_DOMAIN="oliver14.com"
+ROUTE53_MANAGED_LABELS="app,argocd,grafana,prometheus"
 GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Microservices.git"
 
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"
@@ -21,6 +25,13 @@ GRAFANA_ROUTE="$OBSERVABILITY_DIR/HTTProute-grafana.yaml"
 GRAFANA_TG="$OBSERVABILITY_DIR/target-grp-grafana.yaml"
 PROMETHEUS_ROUTE="$OBSERVABILITY_DIR/HTTProute-prometheus.yaml"
 PROMETHEUS_TG="$OBSERVABILITY_DIR/target-grp-prometheus.yaml"
+KIBANA_ROUTE="$OBSERVABILITY_DIR/HTTProute-kibana.yaml"
+KIBANA_TG="$OBSERVABILITY_DIR/target-grp-kibana.yaml"
+STORAGECLASS_FILE="$OBSERVABILITY_DIR/storageclass.yaml"
+LOGGING_NAMESPACE="logging"
+ES_PVC_NAME="elasticsearch-data-eck-elasticsearch-es-default-0"
+EBS_CSI_ADDON="aws-ebs-csi-driver"
+EBS_CSI_SA="ebs-csi-controller-sa"
 
 # Wait until a Kubernetes resource is gone. Skips quietly when already deleted.
 wait_for_delete() {
@@ -57,14 +68,8 @@ route53_managed_records_exist() {
   aws route53 list-resource-record-sets --hosted-zone-id "$zone_id" --output json 2>/dev/null \
     | python3 -c "
 import json, sys
-names = {
-    'app.${DNS_DOMAIN}.', 'argocd.${DNS_DOMAIN}.',
-    'grafana.${DNS_DOMAIN}.', 'prometheus.${DNS_DOMAIN}.',
-    'aaaa-app.${DNS_DOMAIN}.', 'aaaa-argocd.${DNS_DOMAIN}.',
-    'aaaa-grafana.${DNS_DOMAIN}.', 'aaaa-prometheus.${DNS_DOMAIN}.',
-    'cname-app.${DNS_DOMAIN}.', 'cname-argocd.${DNS_DOMAIN}.',
-    'cname-grafana.${DNS_DOMAIN}.', 'cname-prometheus.${DNS_DOMAIN}.',
-}
+labels = '${ROUTE53_MANAGED_LABELS}'.split(',')
+names = {f'{prefix}{label}.${DNS_DOMAIN}.' for prefix in ('', 'aaaa-', 'cname-') for label in labels}
 records = json.load(sys.stdin).get('ResourceRecordSets', [])
 sys.exit(0 if any(r['Name'] in names for r in records) else 1)
 "
@@ -97,55 +102,35 @@ import subprocess
 import sys
 
 DOMAIN = "${DNS_DOMAIN}"
-MANAGED_NAMES = {
-    f"app.{DOMAIN}.",
-    f"argocd.{DOMAIN}.",
-    f"grafana.{DOMAIN}.",
-    f"prometheus.{DOMAIN}.",
-    f"aaaa-app.{DOMAIN}.",
-    f"aaaa-argocd.{DOMAIN}.",
-    f"aaaa-grafana.{DOMAIN}.",
-    f"aaaa-prometheus.{DOMAIN}.",
-    f"cname-app.{DOMAIN}.",
-    f"cname-argocd.{DOMAIN}.",
-    f"cname-grafana.{DOMAIN}.",
-    f"cname-prometheus.{DOMAIN}.",
+labels = "${ROUTE53_MANAGED_LABELS}".split(",")
+managed = {
+    f"{prefix}{label}.{DOMAIN}."
+    for prefix in ("", "aaaa-", "cname-")
+    for label in labels
 }
 
-def aws_json(*args):
-    return json.loads(subprocess.check_output(["aws", *args], text=True))
-
-zones = aws_json("route53", "list-hosted-zones-by-name", "--dns-name", DOMAIN, "--output", "json")
-zone_id = next(
-    (z["Id"].split("/")[-1] for z in zones["HostedZones"] if z["Name"] == f"{DOMAIN}."),
-    None,
-)
+zones = json.loads(subprocess.check_output(
+    ["aws", "route53", "list-hosted-zones-by-name", "--dns-name", DOMAIN, "--output", "json"],
+    text=True
+)).get("HostedZones", [])
+zone_id = next((z["Id"].split("/")[-1] for z in zones if z.get("Name") == f"{DOMAIN}."), "")
 if not zone_id:
     print(f"WARNING: No hosted zone for {DOMAIN}")
     sys.exit(0)
 
-records = aws_json(
-    "route53", "list-resource-record-sets",
-    "--hosted-zone-id", zone_id,
-    "--output", "json",
-)
-changes = [
-    {"Action": "DELETE", "ResourceRecordSet": rr}
-    for rr in records["ResourceRecordSets"]
-    if rr["Name"] in MANAGED_NAMES
-]
+records = json.loads(subprocess.check_output(
+    ["aws", "route53", "list-resource-record-sets", "--hosted-zone-id", zone_id, "--output", "json"],
+    text=True
+)).get("ResourceRecordSets", [])
+changes = [{"Action": "DELETE", "ResourceRecordSet": r} for r in records if r.get("Name") in managed]
 if not changes:
     print("No orphaned Route53 records found.")
     sys.exit(0)
 
-batch_path = "/tmp/route53-orphan-cleanup.json"
-with open(batch_path, "w", encoding="utf-8") as fh:
-    json.dump({"Changes": changes}, fh)
-
 subprocess.check_call([
     "aws", "route53", "change-resource-record-sets",
     "--hosted-zone-id", zone_id,
-    "--change-batch", f"file://{batch_path}",
+    "--change-batch", json.dumps({"Changes": changes}),
 ])
 print(f"Deleted {len(changes)} orphaned Route53 record(s).")
 PY
@@ -154,7 +139,8 @@ PY
 echo ""
 echo "========================================"
 echo "  Kubernetes teardown started"
-echo "  (reverse of post-setup + setup)"
+echo "  (reverse of logging + app + platform)"
+echo "  expect ~10 minutes"
 echo "========================================"
 echo ""
 
@@ -169,6 +155,98 @@ git sparse-checkout add argocd 2>/dev/null || git sparse-checkout set argocd
 git sparse-checkout add observability 2>/dev/null || true
 git sparse-checkout add gateway-api-manifests 2>/dev/null || true
 git pull
+
+# -------------------------------------------------------
+# Reverse run-logging-setup (steps 6→1)
+# Kibana routes first (if expose-kibana.sh was run), then Beats, ES, operator, EBS CSI.
+# ECK Helm uninstall keeps CRDs by design — cluster destroy removes them.
+# -------------------------------------------------------
+echo "Reverse logging step 6: Delete Kibana routes (if exposed)"
+echo ""
+
+kubectl delete -f "$KIBANA_ROUTE" --ignore-not-found --wait=true --timeout=120s 2>/dev/null || true
+kubectl delete -f "$KIBANA_TG" --ignore-not-found --wait=true --timeout=120s 2>/dev/null || true
+wait_for_delete "httproute/kibana-route" "$LOGGING_NAMESPACE" "120s"
+wait_for_delete "targetgroupconfiguration/kibana-tg-config" "$LOGGING_NAMESPACE" "120s"
+
+echo "Kibana routes removed (or were not installed)."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Reverse logging step 5: Delete Kibana (if installed)"
+echo ""
+
+helm uninstall eck-kibana -n "$LOGGING_NAMESPACE" 2>/dev/null || echo "No Kibana Helm release."
+kubectl wait --for=delete pod -l kibana.k8s.elastic.co/name=eck-kibana -n "$LOGGING_NAMESPACE" --timeout=180s 2>/dev/null || true
+
+echo "Kibana removed (or was not installed)."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Reverse logging step 4: Delete Filebeat"
+echo ""
+
+helm uninstall eck-beats -n "$LOGGING_NAMESPACE" 2>/dev/null || echo "No Filebeat Helm release."
+kubectl wait --for=delete pod -l beat.k8s.elastic.co/name=eck-beats -n "$LOGGING_NAMESPACE" --timeout=180s 2>/dev/null || true
+wait_for_delete "beats/eck-beats" "$LOGGING_NAMESPACE" "120s"
+
+echo "Filebeat removed."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Reverse logging step 3: Delete Elasticsearch"
+echo ""
+
+helm uninstall eck-elasticsearch -n "$LOGGING_NAMESPACE" 2>/dev/null || echo "No Elasticsearch Helm release."
+kubectl delete pvc "$ES_PVC_NAME" -n "$LOGGING_NAMESPACE" --ignore-not-found --wait=true --timeout=120s
+kubectl wait --for=delete pod -l elasticsearch.k8s.elastic.co/cluster-name=eck-elasticsearch -n "$LOGGING_NAMESPACE" --timeout=180s 2>/dev/null || true
+wait_for_delete "elasticsearch/eck-elasticsearch" "$LOGGING_NAMESPACE" "120s"
+
+echo "Elasticsearch removed."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Reverse logging step 2: Delete ECK operator"
+echo ""
+
+helm uninstall eck-operator -n "$LOGGING_NAMESPACE" 2>/dev/null || echo "No ECK operator Helm release."
+kubectl wait --for=delete statefulset/elastic-operator -n "$LOGGING_NAMESPACE" --timeout=180s 2>/dev/null || true
+
+kubectl delete namespace "$LOGGING_NAMESPACE" --ignore-not-found --wait=true --timeout=180s
+wait_for_delete "namespace/$LOGGING_NAMESPACE" "" "300s"
+
+echo "ECK operator and logging namespace removed."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Reverse logging step 1: Delete StorageClass and EBS CSI driver"
+echo ""
+
+kubectl delete -f "$STORAGECLASS_FILE" --ignore-not-found 2>/dev/null || kubectl delete storageclass ebs-aws --ignore-not-found
+
+eksctl delete addon --cluster="$CLUSTER_NAME" --name="$EBS_CSI_ADDON" --region="$REGION" 2>/dev/null \
+  && echo "EBS CSI addon removed." \
+  || echo "WARNING: EBS CSI addon not found or could not be deleted."
+
+kubectl wait --for=delete pod -l app.kubernetes.io/name=aws-ebs-csi-driver -n kube-system --timeout=180s 2>/dev/null || true
+
+eksctl delete iamserviceaccount \
+  --cluster="$CLUSTER_NAME" \
+  --namespace=kube-system \
+  --name="$EBS_CSI_SA" \
+  --region="$REGION" 2>/dev/null \
+  && echo "EBS CSI IAM service account removed." \
+  || echo "WARNING: EBS CSI IAM service account not found or could not be deleted."
+
+echo "Logging stack removed."
+echo ""
+echo "----------------------------------------"
+echo ""
 
 # -------------------------------------------------------
 # Reverse step 10: Grafana and Prometheus routes
@@ -227,8 +305,8 @@ kubectl delete -f "$BOUTIQUE_APP_CR" --ignore-not-found --wait=true --timeout=12
 kubectl delete application boutique-app -n argocd --ignore-not-found --wait=true --timeout=120s 2>/dev/null || true
 wait_for_delete "application/boutique-app" "argocd" "180s"
 
-echo "Waiting for boutique-app workloads to terminate..."
-kubectl wait --for=delete pod --all -n boutique-app --timeout=300s 2>/dev/null || true
+echo "Waiting for boutique-app workloads to terminate (can take several minutes)..."
+kubectl wait --for=delete pod --all -n boutique-app --timeout=600s 2>/dev/null || true
 
 kubectl delete namespace boutique-app --ignore-not-found --wait=true --timeout=180s
 wait_for_delete "namespace/boutique-app" "" "600s"

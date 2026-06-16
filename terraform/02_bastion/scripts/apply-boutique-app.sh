@@ -42,6 +42,9 @@ kubectl apply -f "$APP_FILE"
 # Step 5: Show status
 echo "--- Step 5: Status ---"
 kubectl get application boutique-app -n argocd
+kubectl get namespace boutique-app
+kubectl get pods -n boutique-app
+kubectl get svc frontend -n boutique-app
 
 echo ""
 echo "=== Done ==="

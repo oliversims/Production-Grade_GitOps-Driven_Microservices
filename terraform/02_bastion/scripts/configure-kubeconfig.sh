@@ -14,3 +14,5 @@ aws eks update-kubeconfig --region "$REGION" --name "$CLUSTER_NAME"
 
 # Step 2: Check that kubectl can reach the cluster
 kubectl get nodes
+kubectl config current-context
+kubectl get ns

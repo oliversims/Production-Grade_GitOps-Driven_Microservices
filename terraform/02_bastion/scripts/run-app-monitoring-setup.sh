@@ -57,6 +57,13 @@ echo "========================================"
 echo "  App and monitoring setup finished"
 echo "========================================"
 echo ""
+echo "Verification snapshot:"
+kubectl get application -n argocd boutique-app
+kubectl get pods -n boutique-app
+kubectl get pods -n monitoring
+kubectl get httproute -n monitoring
+kubectl get targetgroupconfiguration -n monitoring
+echo ""
 echo "Boutique app:  https://app.oliver14.com"
 echo "Grafana:       https://grafana.oliver14.com"
 echo "Prometheus:    https://prometheus.oliver14.com"

@@ -17,7 +17,6 @@ Update bastion scripts after pushing to GitHub
 
 cd /tmp/bastion-repo && git pull
 sudo cp terraform/02_bastion/scripts/*.sh /opt/bastion/
-sudo cp terraform/02_bastion/scripts/aws-load-balancer-controller-iam-policy.json /opt/bastion/
 sudo chmod +x /opt/bastion/*.sh
 
 

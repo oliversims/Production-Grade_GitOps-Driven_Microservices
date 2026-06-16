@@ -30,23 +30,15 @@ POLICY_ARN="arn:aws:iam::${ACCOUNT_ID}:policy/${POLICY_NAME}"
 echo "Account ID: $ACCOUNT_ID"
 echo "VPC ID: $VPC_ID"
 
-# Step 3: Create or update the IAM policy
+# Step 3: Create the IAM policy (skip if it already exists)
 # Policy JSON is copied to /opt/bastion/ by bastion setup (user_data.sh.tpl).
 # The policy stays in your AWS account even after you destroy the cluster.
-echo "--- Step 3: Create or update IAM policy ---"
+echo "--- Step 3: Create IAM policy ---"
 
-# First run: create the policy. Re-apply: skip quietly (same pattern as install-external-dns.sh).
 aws iam create-policy \
   --policy-name "$POLICY_NAME" \
   --policy-document "file://${POLICY_FILE}" \
   2>/dev/null || echo "IAM policy already exists, using $POLICY_ARN"
-
-# Always publish the bundled policy as the default version so permissions stay current
-# (needed after destroy/reapply when an older policy version is still in AWS).
-aws iam create-policy-version \
-  --policy-arn "$POLICY_ARN" \
-  --policy-document "file://${POLICY_FILE}" \
-  --set-as-default
 
 # Step 4: Create the Kubernetes service account with an IAM role (IRSA)
 echo "--- Step 4: Create service account with IAM role ---"

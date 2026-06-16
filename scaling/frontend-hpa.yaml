@@ -1,19 +1,58 @@
-apiVersion: autoscaling/v2
+# -------------------------------------------------------
+# HORIZONTAL POD AUTOSCALER (HPA): Auto-scale the frontend
+# -------------------------------------------------------
+# An HPA automatically increases or decreases the number of
+# running frontend pods based on how busy they are.
+# Think of it as: "If the frontend is getting overwhelmed,
+# spin up more pods. If it is quiet, scale back down to save money."
+apiVersion: autoscaling/v2  # Version 2 supports multiple metrics (CPU, memory, custom)
 kind: HorizontalPodAutoscaler
 metadata:
-  name: frontend-hpa
-  namespace: boutique-app
+  name: frontend-hpa      # Name of this autoscaler
+  namespace: boutique-app # Must be in the same namespace as the frontend Deployment
+
 spec:
+
+  # -------------------------------------------------------
+  # SCALE TARGET: Which Deployment to autoscale
+  # -------------------------------------------------------
   scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: frontend
-  minReplicas: 1
-  maxReplicas: 6
+    apiVersion: apps/v1   # The API version of the resource being scaled
+    kind: Deployment      # We are scaling a Deployment (not a StatefulSet or DaemonSet)
+    name: frontend        # The exact name of the Deployment to scale.
+                          # The HPA will control the replica count of THIS Deployment.
+
+  # -------------------------------------------------------
+  # REPLICA LIMITS: How many pods are allowed
+  # -------------------------------------------------------
+  minReplicas: 1  # Never scale DOWN below 1 pod.
+                  # Ensures the frontend is always running even during quiet periods.
+                  # Setting this to 0 would mean the app goes completely offline when idle.
+
+  maxReplicas: 6  # Never scale UP beyond 6 pods.
+                  # This is a cost control — prevents runaway scaling
+                  # from creating hundreds of pods during a traffic spike.
+
+  # -------------------------------------------------------
+  # METRICS: What triggers the scaling
+  # -------------------------------------------------------
   metrics:
-  - type: Resource
+  - type: Resource      # Scale based on a built-in resource metric (CPU or memory)
     resource:
-      name: cpu
+      name: cpu         # Watch CPU usage specifically
       target:
         type: Utilization
         averageUtilization: 5
+        # ↑ This is the TRIGGER threshold — 5% average CPU utilization.
+        #
+        # How it works:
+        # - If average CPU across all frontend pods goes ABOVE 5%
+        #   → HPA adds more pods (scales UP)
+        # - If average CPU drops BELOW 5%
+        #   → HPA removes pods (scales DOWN)
+        #
+        # ⚠️ NOTE: 5% is extremely low for a production system.
+        # This means the HPA will scale up almost immediately
+        # under any real load. This is likely set low for
+        # TESTING purposes to easily trigger and observe scaling.
+        # A realistic production value would be 50-70%.

@@ -42,16 +42,16 @@ spec:
       name: cpu         # Watch CPU usage specifically
       target:
         type: Utilization
-        averageUtilization: 5
-        # ↑ This is the TRIGGER threshold — 5% average CPU utilization.
+        averageUtilization: 2
+        # ↑ This is the TRIGGER threshold — 2% average CPU utilization.
         #
         # How it works:
-        # - If average CPU across all frontend pods goes ABOVE 5%
+        # - If average CPU across all frontend pods goes ABOVE 2%
         #   → HPA adds more pods (scales UP)
-        # - If average CPU drops BELOW 5%
+        # - If average CPU drops BELOW 2%
         #   → HPA removes pods (scales DOWN)
         #
-        # ⚠️ NOTE: 5% is extremely low for a production system.
+        # ⚠️ NOTE: 2% is extremely low for a production system.
         # This means the HPA will scale up almost immediately
         # under any real load. This is likely set low for
         # TESTING purposes to easily trigger and observe scaling.

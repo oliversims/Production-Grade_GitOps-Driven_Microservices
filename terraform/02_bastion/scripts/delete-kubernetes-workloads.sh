@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Tear down everything installed by run-logging-setup.sh, run-app-monitoring-setup.sh,
-# and run-platform-setup.sh, in reverse order.
+# Tear down everything installed by run-scaling-setup.sh, run-logging-setup.sh,
+# run-app-monitoring-setup.sh, and run-platform-setup.sh, in reverse order.
 # Run BEFORE: terraform destroy (03_eks → 02_bastion → 01_vpc)
 #
-# Typical runtime: ~10 minutes (boutique-app namespace finalizers are the slowest step).
+# Typical runtime: ~20 minutes (ArgoCD target group and ALB gateway are the slowest steps).
 #
 # Usage: /opt/bastion/delete-kubernetes-workloads.sh
 
@@ -18,6 +18,7 @@ GITHUB_REPO_URL="https://github.com/oliversims/Production-Grade_GitOps-Driven_Mi
 REPO_DIR="$HOME/Production-Grade_GitOps-Driven_Microservices"
 MANIFESTS_DIR="$REPO_DIR/gateway-api-manifests"
 OBSERVABILITY_DIR="$REPO_DIR/observability"
+SCALING_DIR="$REPO_DIR/scaling"
 ARGOCD_TARGET_GRP="$REPO_DIR/argocd/target-grp-config.yaml"
 IMAGE_UPDATER_CR="$REPO_DIR/argocd/image-updater.yaml"
 BOUTIQUE_APP_CR="$REPO_DIR/argocd/argocd-apps/boutique-app.yaml"
@@ -139,8 +140,8 @@ PY
 echo ""
 echo "========================================"
 echo "  Kubernetes teardown started"
-echo "  (reverse of logging + app + platform)"
-echo "  expect ~10 minutes"
+echo "  (reverse of scaling + logging + app + platform)"
+echo "  expect ~20 minutes"
 echo "========================================"
 echo ""
 
@@ -154,7 +155,39 @@ cd "$REPO_DIR"
 git sparse-checkout add argocd 2>/dev/null || git sparse-checkout set argocd
 git sparse-checkout add observability 2>/dev/null || true
 git sparse-checkout add gateway-api-manifests 2>/dev/null || true
+git sparse-checkout add scaling 2>/dev/null || true
 git pull
+
+# -------------------------------------------------------
+# Reverse run-scaling-setup (steps 2→1)
+# Remove HPAs first, then metrics-server.
+# -------------------------------------------------------
+echo "Reverse scaling step 2: Delete HPA manifests"
+echo ""
+
+kubectl delete -f "$SCALING_DIR/" --ignore-not-found --wait=true --timeout=120s 2>/dev/null || true
+kubectl delete hpa --all -n boutique-app --ignore-not-found --wait=true --timeout=120s 2>/dev/null || true
+wait_for_delete "horizontalpodautoscaler/frontend-hpa" "boutique-app" "120s"
+wait_for_delete "horizontalpodautoscaler/cartservice-hpa" "boutique-app" "120s"
+wait_for_delete "horizontalpodautoscaler/checkoutservice-hpa" "boutique-app" "120s"
+wait_for_delete "horizontalpodautoscaler/recommendationservice-hpa" "boutique-app" "120s"
+
+echo "HPA manifests removed."
+echo ""
+echo "----------------------------------------"
+echo ""
+
+echo "Reverse scaling step 1: Delete metrics-server"
+echo ""
+
+helm uninstall metrics-server -n kube-system 2>/dev/null || echo "No metrics-server Helm release."
+kubectl wait --for=delete deployment/metrics-server -n kube-system --timeout=180s 2>/dev/null || true
+wait_for_delete "deployment/metrics-server" "kube-system" "180s"
+
+echo "metrics-server removed."
+echo ""
+echo "----------------------------------------"
+echo ""
 
 # -------------------------------------------------------
 # Reverse run-logging-setup (steps 6→1)
@@ -344,7 +377,7 @@ echo "Reverse step 6: Delete ArgoCD"
 echo ""
 
 kubectl delete -f "$ARGOCD_TARGET_GRP" --ignore-not-found --wait=true --timeout=60s 2>/dev/null || true
-wait_for_delete "targetgroupconfiguration/argo-tg-config" "argocd" "120s"
+wait_for_delete "targetgroupconfiguration/argo-tg-config" "argocd" "300s"
 
 helm_uninstall_and_wait "argo-cd" "argocd" "argo-cd-argocd-server" "180s"
 
@@ -422,10 +455,10 @@ echo "----------------------------------------"
 echo ""
 
 # -------------------------------------------------------
-# Reverse step 4: Gateway API CRDs
+# Reverse step 3: Gateway API CRDs
 # Remove custom resource definitions once all Gateway objects are gone.
 # -------------------------------------------------------
-echo "Reverse step 4: Delete Gateway API CRDs"
+echo "Reverse step 3: Delete Gateway API CRDs"
 echo ""
 
 kubectl delete -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/heads/main/config/crd/gateway/gateway-crds.yaml \
@@ -440,10 +473,10 @@ echo "----------------------------------------"
 echo ""
 
 # -------------------------------------------------------
-# Reverse step 3: AWS Load Balancer Controller
+# Reverse step 2: AWS Load Balancer Controller
 # Uninstalls the controller from install-lbc.sh and revokes its IAM service account.
 # -------------------------------------------------------
-echo "Reverse step 3: Delete AWS Load Balancer Controller"
+echo "Reverse step 2: Delete AWS Load Balancer Controller"
 echo ""
 
 helm uninstall aws-load-balancer-controller -n kube-system 2>/dev/null || true
@@ -468,10 +501,10 @@ echo "----------------------------------------"
 echo ""
 
 # -------------------------------------------------------
-# Reverse step 2: Cluster Autoscaler
+# Reverse step 1: Cluster Autoscaler
 # Uninstalls the controller from install-cluster-autoscaler.sh and revokes its IAM service account.
 # -------------------------------------------------------
-echo "Reverse step 2: Delete Cluster Autoscaler"
+echo "Reverse step 1: Delete Cluster Autoscaler"
 echo ""
 
 helm uninstall cluster-autoscaler -n kube-system 2>/dev/null || true
@@ -491,8 +524,8 @@ echo ""
 echo "----------------------------------------"
 echo ""
 
-# Reverse step 1: configure-kubeconfig — no cluster resources to delete.
-echo "Reverse step 1: configure-kubeconfig (no cluster resources to delete)"
+# configure-kubeconfig — no cluster resources to delete.
+echo "configure-kubeconfig (no cluster resources to delete)"
 echo ""
 echo "NOTE: Node ENIs will clear when you destroy the EKS cluster."
 
